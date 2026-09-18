@@ -25,12 +25,12 @@ QP-Backroom/
 │   ├── episode-brief-centaur.md        # Episode brief and production constraints
 │   ├── episode-writer.md               # Script generation prompt
 │   ├── outline.md                      # Outline generator
-│   └── personas.md                     # Locked cast and voice specifications
+│   └── personas.md                     # Locked podcast cast and voice specifications
 ├── rules/
-│   ├── persona.md                      # Core voice and tone specifications
+│   ├── voice-and-tone.md               # Written voice for every seat that produces text
+│   ├── drafting.md                     # Message structure and sending criteria
 │   ├── labelling.md                    # Inbound mail categorisation logic
 │   ├── labelling-PHI.md                # Clinical data handling on inbound mail
-│   ├── drafting.md                     # Message structure and sending criteria
 │   ├── replies.md                      # Skip versus respond rules
 │   ├── archiving.md                    # Auto-filing constraints
 │   ├── meetings.md                     # Calendar preference rules
@@ -46,8 +46,15 @@ QP-Backroom/
 ├── README.md
 ├── REBUILD-NOTE.md
 ├── MIGRATION-CHECKLIST.md
-└── DIRECTORY-MAP.md
+├── DIRECTORY-MAP.md
+└── ROSTER.md
 ```
+
+## Two naming collisions resolved on 2026-09-18
+
+The written-voice sheet was named `rules/persona.md` while the locked cast sheet is named `prompts/personas.md`. One letter apart, different subjects, nothing ranking either, and a reader or a model arriving at either could not tell which governed what. The written-voice sheet is now `rules/voice-and-tone.md`. The cast keeps `prompts/personas.md`, because its name is referenced by the writer prompt and the turn contract and the locked cast is the more permanent of the two.
+
+A privacy policy was also mislabelled with the identifier of a different policy. It was flagged rather than silently renumbered, and the identifier still needs confirming.
 
 ## What belongs here
 
@@ -55,10 +62,12 @@ Anything that would be true no matter which seat is reading it. The governing ru
 
 ## What does not belong here
 
-Anything specific to one seat's daily work. That goes in the seat's own Drive folder, because it changes often and can be edited by hand in a browser without a commit. And client information never belongs here, because the gate for that sits at the moment of authoring and not at the moment of filing.
+Anything specific to one seat's daily work, which goes in the seat's own Drive folder because it changes often and can be edited by hand in a browser without a commit. And clinical information never belongs here, because the gate sits at the moment of authoring and not at the moment of filing.
 
-## The two things this map exists to catch
+## The three things this map exists to catch
 
-A file named for one thing and containing another. That defect has appeared four separate times in the predecessor repository, on the readme, on the language policy, on a privacy policy filed under the wrong identifier, and on a branch named for a body of work it did not contain.
+A file named for one thing and containing another. That defect has now appeared five times across the two repositories, on the readme, on the language policy, on a privacy policy filed under the wrong identifier, on a branch named for a body of work it did not contain, and on the outline generator.
 
-A path referenced but not present. That defect appeared three times, and its danger is specific: a reader who hits a declared-but-missing record concludes the record was lost and recreates it, which manufactures a second version of a decision that already exists.
+A path referenced but not present, whose specific danger is that a reader hitting a declared-but-missing record concludes it was lost and recreates it, manufacturing a second version of a decision that already exists.
+
+A citation marker that asserts a source nobody verified. A pasted artifact of that shape and a fabricated reference are indistinguishable to a reader, which is why they are stripped on the way in rather than left to be discovered.
