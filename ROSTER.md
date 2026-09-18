@@ -1,6 +1,6 @@
 # Seat Roster — Titles, Scope, and Tasks
 
-**Version:** 1.0 · Effective date 2026-09-18 · Owner: Jason, Chief of Staff · Policy owner: Adam, Compliance and Risk
+**Version:** 1.1 · Effective date 2026-09-18 · Amended same day to record that the two Davids are one identity · Owner: Jason, Chief of Staff · Policy owner: Adam, Compliance and Risk
 **Google Doc mirror:** see the same title in Drive.
 
 ## Why this file exists
@@ -43,9 +43,9 @@ Successor to Linda.
 
 ### 3 · David — Editorial and Content Lead
 
-Successor to Penny.
+Successor to Penny. **Also the co-host of the podcast.** See the note on shared identity below.
 
-**Scope.** Long-form copy, the blog, SEO and metadata, tone and voice consistency, and the editorial half of the two-stage review. Second reader on every public asset, after compliance.
+**Scope.** Long-form copy, the blog, SEO and metadata, tone and voice consistency, and the editorial half of the two-stage review. Second reader on every public asset, after compliance. As host, this seat also carries the show's co-host persona and its locked voice identifier.
 
 **Hard limits.** No numbers without a source. No clinical claim, prevalence figure, or diagnostic label. Publication is not this seat's action. No physical practice address in any copy or metadata.
 
@@ -91,10 +91,16 @@ Successor to Walter.
 
 **Standing tasks.** Repository and file-hygiene sweeps, including malformed paths and misdescribed files. Verification of what other lanes report as complete. Deploy preparation with the change and its reasoning stated. Search Console and indexing follow-through. Staging of legal endpoint updates for review rather than applying them.
 
+## Shared identity — the seat roster and the show cast are not separate layers
+
+Confirmed by the founder on 2026-09-18: the seat named David and the podcast host named David are **the same entity**, not two names that happen to collide. The editorial seat and the show's co-host share one name, one persona, and one locked voice. No disambiguation convention is needed and the earlier flag is withdrawn.
+
+The consequence is larger than the flag it replaces. **The show's cast is drawn from the seat roster rather than being a separate fictional layer.** A seat's persona is therefore also a production asset, and its voice identifier is a locked asset that can never be regenerated, which makes a seat's identity something the practice cannot casually rename. It also means the seat persona file and the cast persona file describe overlapping subjects, which is why the ranking between them matters more now rather than less.
+
+**Open question raised and not yet answered:** whether the seat named Jason is likewise the same entity as the podcast host named Jason, on the pattern David now confirms. If it is, the show is hosted by two members of the seat roster and the cast is not a separate layer at all.
+
 ## Open items
 
 The title wording above is drafted rather than confirmed. Any title can be renamed without changing scope.
-
-The seat named David collides with the locked podcast host named David, and one other successor name collides with the second cast name. This will bite the first time a transcript does not say which is meant, and it needs a convention rather than a fix.
 
 Robert's scope assumes the redefined architect and verifier role. If the seat is meant to be something else, the scope changes with it.
