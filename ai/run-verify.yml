@@ -1,0 +1,56 @@
+name: Layer 5 - Operational Verification Runner
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  verify-stack:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout QP-Backroom-v2
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify Rules Directory Structure
+        run: |
+          echo "Verifying required rule files..."
+          test -d rules/policies || (echo "Missing rules/policies directory" && exit 1)
+          test -f rules/policies/QP-POL-002.md || (echo "Missing Clinical Firewall Policy" && exit 1)
+          test -f rules/policies/QP-POL-003.md || (echo "Missing Client Identity and Anonymisation Policy" && exit 1)
+          test -f rules/policies/QP-ICP-LANG-001.md || (echo "Missing Language and Boundary Policy" && exit 1)
+          test -f rules/corrections/log.md || (echo "Missing Corrections Log" && exit 1)
+
+      - name: Verify Memory Index Mapping
+        run: |
+          echo "Verifying memory layer index..."
+          test -f memory/index.md || (echo "Missing memory/index.md" && exit 1)
+
+      - name: Verify Production Prompt Set
+        run: |
+          echo "Verifying podcast production documents..."
+          test -f prompts/episode-brief-centaur.md || (echo "Missing episode brief" && exit 1)
+          test -f prompts/episode-writer.md || (echo "Missing episode writer prompt" && exit 1)
+          test -f prompts/outline.md || (echo "Missing outline generator" && exit 1)
+          test -f prompts/personas.md || (echo "Missing cast and voice specifications" && exit 1)
+
+      - name: Verify No Clinical Data Committed
+        run: |
+          echo "Screening for client identity markers..."
+          if grep -rInE '\b(patient|client)[[:space:]]+(name|DOB|MRN)\b' --include='*.md' . ; then
+            echo "Potential client identifier found. Failing."
+            exit 1
+          fi
+          echo "No client identifier markers found."
+
+      - name: Report Verification Status
+        if: success()
+        run: echo "Verification completed successfully. Rules, memory, and production prompt set are intact."

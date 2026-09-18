@@ -1,0 +1,39 @@
+name: Layer 5 - Operational Verification
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout QP-Backroom-v2
+        uses: actions/checkout@v4
+
+      - name: Verify policy set is complete
+        run: |
+          echo "Auditing the full policy set. A subset check is a gate that passes the thing it was built to stop."
+          for f in rules/policies/*.md; do
+            echo "Checking $f"
+            grep -q 'Status:' "$f" || (echo "$f is missing a status line" && exit 1)
+          done
+
+      - name: Verify no malformed paths
+        run: |
+          echo "Checking for paths that cannot be checked out on all platforms."
+          find . -name '* *' -o -name '*:*' | grep -v '^\./\.git/' && (echo "Malformed path found" && exit 1) || echo "No malformed paths."
+
+      - name: Verify readme describes both purposes
+        run: |
+          echo "Guarding against the readme drifting away from what the repository contains."
+          grep -qi 'podcast' README.md || (echo "README no longer mentions the podcast set it contains" && exit 1)
+          grep -qi 'operations' README.md || (echo "README does not mention the operations layer" && exit 1)
+
+      - name: Report
+        if: success()
+        run: echo "Verification passed."

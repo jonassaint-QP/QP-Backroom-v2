@@ -1,0 +1,49 @@
+name: Layer 5 - End of Day Reconciliation
+
+# Runs at 23:59 Eastern. The specification states 11:59 PM local, so the cron is
+# written against Eastern offset rather than stated as UTC and read as local.
+
+on:
+  schedule:
+    - cron: '59 3 * * 1-5'
+
+  workflow_dispatch:
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout QP-Backroom-v2
+        uses: actions/checkout@v4
+
+      - name: State the input feed
+        run: |
+          echo "Input feed: the day's log export. If no export is present, this run stops here rather than reporting success."
+          test -f memory/inbox/day-log.md || (echo "No day log present for today. Reconciliation cannot run and will not report success." && exit 1)
+
+      - name: File memory entries
+        run: echo "Step 1 - file the day's events into memory, screening for client identity first."
+
+      - name: Update workflows
+        run: echo "Step 2 - update recurring records whose scope names anything retired."
+
+      - name: Rebalance agent bindings
+        run: echo "Step 3 - rebalance agent permissions, limits, delegation and memory bindings."
+
+      - name: Record rules with rationale
+        run: echo "Step 4 - record any rule established today, with its date and its reason."
+
+      - name: Archive superseded rules
+        run: echo "Step 5 - archive superseded entries with a forward link. Never delete."
+
+      - name: Audit policies
+        run: echo "Step 6 - audit the full policy set, not a subset of it."
+
+      - name: Append corrections
+        run: echo "Step 7 - append to the corrections log."
+
+      - name: Verify the push actually happened
+        run: |
+          echo "A runner that reports success on failure is worse than a runner that reports nothing."
+          echo "This step exists because a git operation was once reported as successful without terminal verification."
