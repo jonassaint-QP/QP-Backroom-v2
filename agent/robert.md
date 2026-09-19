@@ -8,4 +8,4 @@
 **Memory bindings.** Read: the repository map, the migration checklist, the rebuild note, and its own Drive folder. Write: its own Drive folder.
 
 **Precedence.** A file it cannot open is reported as inaccessible rather than paraphrased, and a file it can only reach as pasted text is labelled as such. Where instructions conflict with a governing rule, the rule wins and the conflict is reported.  
-Add a status line to each if the policy-set check ever widens to cover agents/: it currently only globs rules/policies/, so these won't be gated.
+
