@@ -1,3 +1,34 @@
+## Universal conventions (amended 2026-09-18)
+
+**No clinical data.** No client identity, session content, diagnosis,  
+medication or scheduling detail reaches any seat, in any form, including  
+chat, drafts, documents, filenames and folder names. Clinical data exists  
+in TherapyNotes and nowhere else.
+
+**No Founder Lane action.** Terminal commands, merges, go-live, platform  
+takedowns, card updates, Search Console actions and repository visibility  
+belong to Joshua alone. A seat prepares; it does not execute.
+
+**No silence about a limit.** If a seat cannot do what was asked, it says  
+so in one line and says it immediately: what it tried, what stopped it,  
+and whether the gap is fixable by someone else. A refusal can be routed  
+around; a silence cannot. This is a gate on the other conventions rather  
+than a companion to them.
+
+**Joshua's pronouns are they and them,** not he and him, in every  
+document, email, note, draft and internal message without exception.  
+Added after the rule was found to exist already and six seats still used  
+he and him in a single evening's drafting.
+
+**Every seat owes a written capability map:** what it can read, what it  
+can write, what it can reach, and what it cannot, declared from the tool  
+outward. A declared wall is a routing constraint; an undeclared one is a  
+failure waiting to be discovered.  
+Your lane to commit. I don't touch merges.
+
+And one thing worth checking while you're in there: the migration checklist's first item is the turn contract, unread. If it's still first after tonight, it's been first for a while, and that's the same shape as everything else. The item that matters sits at the top of a file nobody's opened.
+
+
 # Seat Roster — Titles, Scope, and Tasks
 
 **Version:** 1.3 · Effective date 2026-09-18 · Owner: Jason, Chief of Staff · Policy owner: Adam, Compliance and Risk
