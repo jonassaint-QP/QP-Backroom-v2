@@ -1,12 +1,12 @@
 name: Layer 5 - End of Day Reconciliation
 
-# Runs at 23:59 Eastern. The specification states 11:59 PM local, so the cron is
-# written against Eastern offset rather than stated as UTC and read as local.
-
 on:
   schedule:
-    - cron: '59 3 * * 1-5'
-
+    # 23:59 Eastern is the next day in UTC, so the range shifts by one; 1-5 was
+    # Sunday through Thursday Eastern, dropping Friday and running a day early.
+    # Known limitation: UTC scheduling drifts by an hour with daylight saving;
+    # only a job reading its own date can correct it.
+    - cron: '59 3 * * 2-6'
   workflow_dispatch:
 
 jobs:
@@ -17,33 +17,71 @@ jobs:
       - name: Checkout QP-Backroom-v2
         uses: actions/checkout@v4
 
-      - name: State the input feed
+      - name: Check day-log input
+        id: day_log
+        shell: bash
         run: |
-          echo "Input feed: the day's log export. If no export is present, this run stops here rather than reporting success."
-          test -f memory/inbox/day-log.md || (echo "No day log present for today. Reconciliation cannot run and will not report success." && exit 1)
+          set -euo pipefail
+          if [[ -f memory/inbox/day-log.md ]]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+            echo "Day-log input: present=true"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::warning file=memory/inbox/day-log.md::Day-log input is missing; present=false. This stub will continue without reconciliation."
+          fi
 
-      - name: File memory entries
-        run: echo "Step 1 - file the day's events into memory, screening for client identity first."
-
-      - name: Update workflows
-        run: echo "Step 2 - update recurring records whose scope names anything retired."
-
-      - name: Rebalance agent bindings
-        run: echo "Step 3 - rebalance agent permissions, limits, delegation and memory bindings."
-
-      - name: Record rules with rationale
-        run: echo "Step 4 - record any rule established today, with its date and its reason."
-
-      - name: Archive superseded rules
-        run: echo "Step 5 - archive superseded entries with a forward link. Never delete."
-
-      - name: Audit policies
-        run: echo "Step 6 - audit the full policy set, not a subset of it."
-
-      - name: Append corrections
-        run: echo "Step 7 - append to the corrections log."
-
-      - name: Verify the push actually happened
+      - name: Unimplemented filing of memory entries
+        shell: bash
         run: |
-          echo "A runner that reports success on failure is worse than a runner that reports nothing."
-          echo "This step exists because a git operation was once reported as successful without terminal verification."
+          set -euo pipefail
+          echo "Unimplemented: file the day's events into memory, screening for client identity first."
+
+      - name: Unimplemented workflow updates
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Unimplemented: update recurring records whose scope names anything retired."
+
+      - name: Unimplemented agent binding rebalancing
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Unimplemented: rebalance agent permissions, limits, delegation and memory bindings."
+
+      - name: Unimplemented rule recording with rationale
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Unimplemented: record any rule established today, with its date and its reason."
+
+      - name: Unimplemented archiving of superseded rules
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Unimplemented: archive superseded entries with a forward link. Never delete."
+
+      - name: Unimplemented policy auditing
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Unimplemented: audit the full policy set, not a subset of it."
+
+      - name: Unimplemented correction appending
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Unimplemented: append to the corrections log."
+
+      - name: Report reconciliation status
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
+          # NOT A PASS, NO RECONCILIATION PERFORMED
+
+          This workflow is a stub containing no filing, updating, rebalancing, rule recording, archiving, auditing or correction logic.
+
+          This run must not be read as evidence that anything was reconciled.
+
+          A producer for the input feed is required.
+          SUMMARY

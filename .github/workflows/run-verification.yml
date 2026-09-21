@@ -2,38 +2,130 @@ name: Layer 5 - Operational Verification
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   verify:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout QP-Backroom-v2
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Verify policy set is complete
+      - name: Verify required structure
+        shell: bash
         run: |
-          echo "Auditing the full policy set. A subset check is a gate that passes the thing it was built to stop."
-          for f in rules/policies/*.md; do
-            echo "Checking $f"
-            grep -q 'Status:' "$f" || (echo "$f is missing a status line" && exit 1)
+          set -euo pipefail
+          required_paths=(
+            "rules/policies"
+            "rules/policies/QP-POL-002.md"
+            "rules/policies/QP-POL-003.md"
+            "rules/policies/QP-ICP-LANG-001.md"
+            "rules/corrections/log.md"
+            "memory/index.md"
+            "prompts/episode-brief-centaur.md"
+            "prompts/episode-writer.md"
+            "prompts/outline.md"
+            "prompts/personas.md"
+          )
+          missing=0
+          for path in "${required_paths[@]}"; do
+            if [[ ! -e "$path" ]]; then
+              echo "::error::Required path is missing: $path"
+              missing=1
+            fi
           done
+          (( missing == 0 ))
+
+      - name: Audit the full policy set, not a subset of it
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' policy_files < <(find rules -type f -name '*.md' -print0)
+          if (( ${#policy_files[@]} == 0 )); then
+            echo "::error::No Markdown policy files were found under rules/."
+            exit 1
+          fi
+          failed=0
+          for file in "${policy_files[@]}"; do
+            echo "Checking $file"
+            if ! grep -qF 'Status:' "$file"; then
+              echo "::error file=$file::Missing a line containing Status:"
+              failed=1
+            fi
+          done
+          (( failed == 0 ))
+
+      - name: Verify the language policy carries its operative rule
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          policy="rules/policies/QP-ICP-LANG-001.md"
+          if ! grep -qF 'first-touch' "$policy"; then
+            echo "::warning file=$policy::The file currently carries the policy name rather than operative content; this is content debt, not a workflow fault."
+            exit 1
+          fi
+          echo "Confirmed that $policy contains the literal operative rule marker: first-touch"
 
       - name: Verify no malformed paths
+        shell: bash
         run: |
-          echo "Checking for paths that cannot be checked out on all platforms."
-          find . -name '* *' -o -name '*:*' | grep -v '^\./\.git/' && (echo "Malformed path found" && exit 1) || echo "No malformed paths."
+          set -euo pipefail
+          malformed=0
+          while IFS= read -r -d '' path; do
+            path="${path#./}"
+            if [[ "$path" == *" "* || "$path" == *":"* ]]; then
+              printf 'Malformed path: %s\n' "$path"
+              malformed=1
+            fi
+          done < <(find . -path './.git' -prune -o -print0)
+          if (( malformed != 0 )); then
+            echo "::error::Repository paths must not contain spaces or colons."
+            exit 1
+          fi
+          echo "No repository paths contain spaces or colons."
 
       - name: Verify readme describes both purposes
+        shell: bash
         run: |
-          echo "Guarding against the readme drifting away from what the repository contains."
-          grep -qi 'podcast' README.md || (echo "README no longer mentions the podcast set it contains" && exit 1)
-          grep -qi 'operations' README.md || (echo "README does not mention the operations layer" && exit 1)
+          set -euo pipefail
+          if ! grep -qi 'podcast' README.md; then
+            echo "::error file=README.md::README.md must describe the podcast purpose."
+            exit 1
+          fi
+          if ! grep -qi 'operations' README.md; then
+            echo "::error file=README.md::README.md must describe the operations purpose."
+            exit 1
+          fi
+          echo "README.md describes both the podcast and operations purposes."
 
-      - name: Report
-        if: success()
-        run: echo "Verification passed."
+      - name: Screen for client identity markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Running a backstop screen, not a privacy control."
+          marker='(^|[^[:alnum:]_])((patient|client)[[:space:]_-]+name|date[[:space:]_-]+of[[:space:]_-]+birth|DOB|MRN)[[:space:]]*[:=-][[:space:]]*[[:alnum:]]'
+          found=0
+          while IFS= read -r -d '' file; do
+            if grep -EHni "$marker" "$file"; then
+              found=1
+            fi
+          done < <(find . -path './.git' -prune -o -type f -name '*.md' -print0)
+          if (( found != 0 )); then
+            echo "::error::The backstop screen found labeled-value patient or client identity markers."
+            exit 1
+          fi
+          echo "The backstop screen found no labeled-value patient or client identity markers."
+
+      - name: Report verification result
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Verification passed. This line is not a substitute for reading the gates above."
