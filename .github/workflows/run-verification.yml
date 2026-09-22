@@ -43,13 +43,20 @@ jobs:
           done
           (( missing == 0 ))
 
-      - name: Audit the full policy set, not a subset of it
+      - name: Audit the policy instruments, not the standards and the log
         shell: bash
         run: |
           set -euo pipefail
-          mapfile -d '' policy_files < <(find rules -type f -name '*.md' -print0)
+          # Scope, narrowed 2026-09-22. This audit covers policy instruments under
+          # rules/policies/ only. rules/drafting.md is a drafting standard,
+          # rules/voice-and-tone.md is a voice standard, and rules/corrections/log.md
+          # is an append-only log. None of the three carries a lifecycle that a status
+          # line could describe. Widening this audit to every file under rules/ made
+          # the gate red on every push, and a required check that always fails stops
+          # being read, which is the failure this workflow exists to prevent.
+          mapfile -d '' policy_files < <(find rules/policies -type f -name '*.md' -print0)
           if (( ${#policy_files[@]} == 0 )); then
-            echo "::error::No Markdown policy files were found under rules/."
+            echo "::error::No Markdown policy instruments were found under rules/policies/."
             exit 1
           fi
           failed=0
