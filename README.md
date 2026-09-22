@@ -6,8 +6,9 @@ Shared rules, policies, memory, and the podcast production prompt set.
 
 **Operations layer.** The governing rules, the seat roster, the naming  
 and precedence conventions, the shared vocabulary, the memory layer, and  
-the version history. This repository is the brain of record for all  
-models and information.
+the version history. This repository is the source of record for the governed
+rule set, the seat roster, and the podcast production prompt set. Canonical
+working records also live in the platform brain and in Drive.
 
 **Podcast production set.** The writer prompt, the host and cast  
 specifications, and the episode material for the show.
