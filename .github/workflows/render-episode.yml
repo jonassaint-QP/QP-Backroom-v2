@@ -1,0 +1,35 @@
+name: Render Episode
+
+on:
+  workflow_dispatch:
+    inputs:
+      brief:
+        description: Path to the episode brief in this repo
+        required: true
+        default: prompts/episode-brief-centaur.md
+      episode_id:
+        description: Episode slug used for output filenames
+        required: true
+        default: centaur-01
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Render episode
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TEXT_MODEL: gemini-2.5-pro
+          TTS_MODEL: gemini-3.1-flash-tts-preview
+        run: node render/render-episode.mjs "${{ inputs.brief }}" "${{ inputs.episode_id }}"
+      - name: Upload episode
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.episode_id }}
+          path: out/
