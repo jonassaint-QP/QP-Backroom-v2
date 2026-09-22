@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout QP-Backroom-v2
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Check day-log input
         id: day_log
