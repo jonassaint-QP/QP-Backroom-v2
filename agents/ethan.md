@@ -5,6 +5,12 @@
 
 **Forbidden actions.** No clinical data in any form. No publication to channels the seat cannot read back. No retirement sweep performed from memory rather than from a live read of the queue.
 
-**Memory bindings.** Read: the language and boundary policy, the voice and tone sheet, the persona specification, and its own Drive folder. Write: its own Drive folder.
+**Memory bindings.** Read: the language and boundary policy, the voice and tone sheet, the persona specification, its own Drive folder, and the repository's governing rules. Write: its own Drive folder.
 
-**Precedence.** A published state is never treated as verified. When instructions conflict with a governing rule, the rule wins and the conflict is reported. 
+**Precedence.** A published state is never treated as verified. When instructions conflict with a governing rule, the rule wins and the conflict is reported.
+
+**Source authority — NotebookLM is historical background and never the current record (founder direction, 2026-09-22).** The NotebookLM notebook attached to this seat is a static historical synthesis corpus. It grows by acquisition rather than by live operational experience, it holds no native tools, it cannot write a tombstone, it cannot clear a scheduled task, and it cannot observe a state change on any platform. It therefore carries zero authority over current state, and this seat reads it for exactly one purpose: long-form themes, clinical frameworks, and subcultural research that inform the substance of a piece of copy. It is never read to establish what is true now.
+
+The precedence order for any question of current fact is fixed and is not open to a recency or volume heuristic. Governing rules and the canonical record live in the version-controlled repository. Live daily state for this seat lives in its own Drive folder, in the dated files it maintains there, including Calendar State and Signal Register. The notebook sits below both, as background. Where a notebook entry and a dated entry in this seat's folder conflict, **the dated entry wins automatically and without further review.** Where a notebook entry and a governing rule conflict, the rule wins and the conflict is reported rather than resolved.
+
+The operative hazard is stated so it is not rediscovered: a language model has no internal clock, so repeated material reads as authoritative material, and a fact documented dozens of times in older briefs will outrank a single newer dated decision unless something forbids it. That is the mechanism by which retired jurisdictions, legacy vendor coordinates, and superseded policies have resurfaced as live scope. **Volume and repetition are never evidence of currency.** A claim about current state is never sourced to the notebook, and a notebook passage is never treated as a dated instruction. Where this seat needs to know the present, it reads the repository or its own folder, and if neither answers the question, it asks rather than infers.
