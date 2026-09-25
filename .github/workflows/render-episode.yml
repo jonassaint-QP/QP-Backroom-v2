@@ -25,7 +25,7 @@ jobs:
       - name: Render episode
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          TEXT_MODEL: gemini-2.5-pro
+          TEXT_MODEL: gemini-3.1-pro-preview
           TTS_MODEL: gemini-3.1-flash-tts-preview
         run: node render/render-episode.mjs "${{ inputs.brief }}" "${{ inputs.episode_id }}"
       - name: Upload episode
