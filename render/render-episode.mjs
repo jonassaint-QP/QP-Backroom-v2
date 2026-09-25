@@ -10,7 +10,7 @@ if (!KEY) {
 }
 
 const TTS_MODEL = process.env.TTS_MODEL || 'gemini-3.1-flash-tts-preview';
-const TEXT_MODEL = process.env.TEXT_MODEL || 'gemini-2.5-pro';
+const TEXT_MODEL = process.env.TEXT_MODEL || 'gemini-3.1-pro-preview';
 const VOICES = { David: 'Algenib', Jason: 'Charon' };
 const SECTIONS = 3;
 
