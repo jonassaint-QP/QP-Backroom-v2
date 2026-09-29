@@ -26,11 +26,31 @@
 
 **Why the gate sits here rather than after generation.** The render is a single run: the text model writes the script and the TTS engine voices it in the same pass, producing the mp3 and the turn array together. There is therefore no script-only artifact waiting to be cleared afterwards, and a compliance failure discovered after the render does not stop publication — it only means the render was already spent. The brief is also the only artifact in this pipeline a person actually writes; everything downstream is machine output.
 
-**Editorial clearance covers:** the beats and their order, the section split and its word targets, the cast and voice identifiers, the terms of art, and the exclusions.
+**Editorial clearance covers:** the beats and their order, the section split and its word targets, the cast and voice identifiers, the terms of art, the call to action and the exclusions, and the lane assignment below.
 
-**Compliance clearance covers:** the claims made, the clinical framing, the authority references, the boundary conventions, and the prohibited content — including the clinical skill names, the founder's geographic boundary, and the halted-framing list below.
+**Compliance clearance covers:** the claims made, the clinical framing, the authority references, the boundary conventions and the prohibited content — including the clinical skill names, the founder's geographic boundary, and the halted-framing list.
 
 **The rendered turn array is still checked against this brief after the render**, but that check is verification that the brief was followed, not a clearance gate. Where the render departs from a cleared brief, the correct response is to correct the brief and re-render, not to publish an uncleared departure.
+
+---
+
+## Lane Assignments per Beat
+
+**Every beat carries a named lane.** A beat with no lane assigned arrives thin, because the material for the second register gets summarised rather than written out. That is the failure behind every short script to date.
+
+**Cold Open — The Rented F-150.** Shared setup. **David, editorial:** the gut check on bodies treated as utility vehicles. **Jason, clinical:** somatic dissociation as an adaptive defence against sensory overload.
+
+**Beat One — Double Outsider and the Ambiguity Tax.** **Jason, clinical:** the Double Outsider definition, and the Ambiguity Tax as a mechanism. **David, editorial:** the workplace translation, the exhaustion of converting sensory need into corporate-approved language.
+
+**Beat Two — Universal Burnout and Artificial Bifurcation.** **David, editorial:** the frozen-at-the-desk task paralysis. **Jason, clinical:** artificial bifurcation, and the mechanics of chronic hyperarousal.
+
+**Beat Three — Deconstructing the Internal Courtroom.** **Jason, clinical:** the Auditor and the Prosecutor as distinct functions. **David, editorial:** the delayed-text trial, and the plain-language translation. **Jason, clinical:** why cognitive reframing fails while the autonomic system is redlining.
+
+**Beat Four — Somatic Scaffolding Against Clinical Pathology.** **Jason, clinical:** somatic scaffolding, and the STOP skill and TIPP protocols as point-of-performance resets. **David, editorial:** the skyscraper scaffolding metaphor, and the counter-argument against simply trying harder.
+
+**Beat Five — The Pillars of Relational Collapse.** **Jason, clinical:** Garbage Code, the F-150 as execution layer, and collapse as terminus rather than strategy. **David, editorial:** Capacity Catfishing, and the metabolic exhaustion underneath it.
+
+**Beat Six and Closing — Parallel Play and Radical Integration.** **David, editorial:** the thirty-minute parallel play script, and the closing reflection. **Jason, clinical:** passive attunement, and the reframe of traits as adaptation.
 
 ---
 
@@ -48,7 +68,7 @@ David opens with a dry, working-class gut check on how high-capacity adults trea
 
 ### Beat One: The Double-Outsider Target Audience
 
-Jason defines the Double-Outsider concept, detailing the unique intersectional burden carried by individuals who navigate life as queer, neurodivergent, and kink-fluent. David counters with a practical workplace scenario, describing the exhaustion of constantly translating internal sensory needs into corporate-approved language. Jason introduces the mechanism of the Ambiguity Tax, detailing how unstated expectations and vague social boundaries drain a substantial share of an individual's daily executive processing budget before real work even begins.
+Jason defines the Double-Outsider concept, detailing the unique intersectional burden carried by individuals who navigate life as queer, neurodivergent, and kink-fluent. David counters with a practical workplace scenario, describing the exhaustion of constantly translating internal sensory needs into corporate-approved language. Jason introduces the mechanism of the Ambiguity Tax, detailing how unstated expectations and vague social boundaries consume a substantial portion of an individual's daily executive processing budget before real work even begins.
 
 ### Beat Two: Universal Burnout and Artificial Bifurcation
 
@@ -62,13 +82,13 @@ Jason lays out the mechanics of the Internal Courtroom, detailing the distinct r
 
 ### Beat Four: Somatic Scaffolding vs Clinical Pathology
 
-Jason contrasts traditional clinical pathologizing with somatic scaffolding, emphasizing the house philosophy that kink literacy is a regulation resource rather than a symptom. David brings in the practical mechanics of external executive supports, using the metaphor of building heavy-duty skyscraper scaffolding rather than telling an overwhelmed person to simply try harder. Jason details the STOP skill and the TIPP protocols as DBT names them — descriptive, not prescriptive — as point-of-performance resets that alter body chemistry rapidly without requiring top-down logical analysis.
+Jason contrasts traditional clinical pathologizing with somatic scaffolding, emphasizing practical external supports over clinical labels. David brings in the practical mechanics of external executive supports, using the metaphor of building heavy-duty skyscraper scaffolding rather than telling an overwhelmed person to simply try harder. Jason details the STOP skill and the TIPP protocols as DBT names them — descriptive, not prescriptive — as point-of-performance resets that alter body chemistry rapidly without requiring top-down logical analysis.
 
 ## Section Three Outline: Beats Five and Six Plus Closing
 
-### Beat Five: The Four Pillars of Relational Collapse
+### Beat Five: The Pillars of Relational Collapse
 
-Jason introduces the four pillars of systemic dysregulation: Garbage Code, the F-150, the Ambiguity Tax, and Capacity Catfishing. David tackles Capacity Catfishing directly, describing how neurodivergent adults mask during early relationship stages to match an ideal partner profile, only for the entire architecture to collapse when metabolic fuel runs out. Jason expands on collapse as a natural terminus rather than a strategic failure, explaining how unexamined Garbage Code instructions force the nervous system into a cold stall. Total depletion is the terminus, not a fifth pillar.
+Jason returns to the pillars of systemic dysregulation, assembling them into a single architecture: Garbage Code, the F-150, the Ambiguity Tax, and Capacity Catfishing. **The Ambiguity Tax is carried over rather than introduced here** — it was defined at Beat One, so it is referenced and placed, not explained a second time. David tackles Capacity Catfishing directly, describing how neurodivergent adults mask during early relationship stages to match an ideal partner profile, only for the entire architecture to collapse when metabolic fuel runs out. Jason expands on collapse as a natural terminus rather than a strategic failure, explaining how unexamined Garbage Code instructions force the nervous system into a cold stall. Total depletion is the terminus, not a fifth pillar.
 
 ### Beat Six: The Parallel Play Experiment and Radical Integration
 
@@ -80,13 +100,13 @@ The dialogue must seamlessly integrate the five mandatory terms of art across th
 
 **"Gear, Not Medicine" is not a required term of art.** It was retired from the required set on 2026-09-18. The framing it names still governs how gear and kink material are written — affirming, non-pathologizing, never framed as medical treatment — but it is not a phrase the script must contain, and it does not stand in place of a glossary term.
 
-The hosts conclude the episode by turning toward possibility rather than offering generic therapeutic platitudes. David delivers the closing reflection, asking a varied question about what becomes possible when an individual stops litigating their own existence — varied, not the show's canonical closing question verbatim. The final turn directs listeners to the primary call-to-action anchor: Adjourn the Courtroom, Book Your Intake Assessment.
+The hosts conclude the episode by turning toward possibility rather than offering generic therapeutic platitudes. David delivers the closing reflection, asking a varied question about what becomes possible when an individual stops litigating their own existence — varied, not the show's canonical closing question verbatim. The final turn attaches the primary call-to-action anchor at the close of the episode: Adjourn the Courtroom, Book Your Intake Assessment.
 
 ---
 
 ## PRODUCTION NOTES / QA FLAGS
 
-- **No unsupported numeric claims in this outline or in the script.** A "forty percent cognitive budget" figure was previously flagged and removed; that figure and its relatives do not return. Where a proportion is needed, describe it in language — "a substantial share," "most of the day" — rather than attaching a percentage.
+- **No unsupported numeric claims in this outline or in the script.** A "forty percent cognitive budget" figure was previously flagged and removed; that figure and its relatives do not return. Where a proportion is needed, describe it in language — "a substantial portion," "most of the day" — rather than attaching a percentage.
 - Clinical skill names, including the STOP skill and the TIPP protocols, are descriptive only. They are named as DBT names them and are never presented as prescriptive treatment for a listener. **Flagged for compliance review at the brief stage.**
 - This is educational storytelling, not medical advice. Soften any definitive medical claim into experience-based or metaphorical language.
 - **Never reference Cleveland or Ohio in any copy** — founder's regulatory boundary, 2026-09-16.
@@ -94,5 +114,6 @@ The hosts conclude the episode by turning toward possibility rather than offerin
 - Keep David's sentences six to twelve words in the final script; Jason carries the procedural explanation.
 - **Post-render verification, not clearance.** Check the generated turn array against this brief — all beats covered in order, terms of art present, CTA at the close only, no unsupported numeric claims. A departure means the brief gets corrected and the episode re-rendered.
 - Chemsex/OCSB topics are not in this outline. Do not add them. Kink and leather references stay in the affirming, non-pathologizing frame consistent with QP policy.
+- **No citation markers, bracketed numbers or generator tags anywhere in this file.** A citation marker asserts that a source exists and that something was checked; in a repository nothing verifies either claim, so an artifact and a fabricated citation fail identically.
 
-*Filed by Eva, Executive Assistant, on the founder's brief of 2026-09-29. No client identifiers, no credentials, no clinical detail and no financial content appear in this document.*
+*Filed by Eva, Executive Assistant, on the founder's brief of 2026-09-29. Lane assignments merged from the founder's delivery of the same date. No client identifiers, no credentials, no clinical detail and no financial content appear in this document.*
