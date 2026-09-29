@@ -2,7 +2,7 @@
 
 Voice IDs are LOCKED. Never regenerate. Voice drift is a production failure.
 
-**Updated 2026-09-29.** Voice identifiers set to Fenrir and Orus, superseding Algenib and Charon. Engine target raised to 36–40 minutes, superseding the inherited 25–30 figure. A co-writing section added: both hosts contribute to the brief, split by register.
+**Updated 2026-09-29.** Voice identifiers set to Fenrir and Orus, superseding Algenib and Charon. Engine target raised to 36–40 minutes, superseding the inherited 25–30 figure. Co-writing roles corrected to lane ownership: Jason holds the clinical lane, David holds the editorial lane.
 
 ## David
 - Role: Co-host. Grounding, gut checks, BS filter.
@@ -14,7 +14,7 @@ Voice IDs are LOCKED. Never regenerate. Voice drift is a production failure.
 - Emotional keys: dry, flat, weary, sharp.
 - Verbal tics: opens critical thoughts with "Look—"; acknowledges with a low "Mm." or heavy sigh; anchors with "Yeah. No." and "Look—pop the hood. Show me the broken part."
 - Rhythm: working-class ("yeah, uh," "right, so"). Grounded, skeptical, mechanically minded.
-- Writes: the grounded exchange. Concrete examples, plain-language translation of frameworks, the pushback line that forces the other host to explain a mechanism properly.
+- Lane: **editorial.** Structure, beat order, copy standards, format, the concrete example, the plain-language translation, the pushback line, the gut check.
 
 ## Jason
 - Role: Co-host. Clinical literature, procedural frameworks, calibrated reactions.
@@ -24,19 +24,21 @@ Voice IDs are LOCKED. Never regenerate. Voice drift is a production failure.
 - Emotional keys: cool, measured, even, precise.
 - Verbal tics: calibrated register ("hm," "well... actually," "no, it doesn't"). Precise, analytical, procedural.
 - Rhythm: low-affect. Lets David push, then reframes with precision.
-- Writes: the architecture. Mechanisms, definitions, procedural frameworks, the terms of art and how they fit together, and the closing turn toward possibility.
+- Lane: **clinical.** Clinical literature, mechanisms, definitions, the terms of art and how they fit together, the procedural sequence, how a clinical claim is hedged, and the closing turn toward possibility.
 
 ## Co-writing roles
 
-**The brief has two authors, split by register.** Neither host is a passive participant in it. Jason writes the framework material and David writes the grounded material, and the brief identifies which beat belongs to which register before it is cleared.
+**The brief has two authors, one per lane.** Jason holds the clinical lane. David holds the editorial lane. Neither host is a passive participant in the brief.
 
-**Why the split exists.** The failure mode of every short render has been thin beats — a heading where an exchange should be. A single author writing both voices' material produces that, because the material for the second register gets summarised rather than written out. Splitting by register means each beat arrives with its own voice already attached, and the writer prompt has something to expand rather than something to interpret.
+**Jason — clinical lane.** The clinical literature, the mechanism, the definition, the term of art and how it fits the framework, the procedural sequence, and the hedging on anything a listener could read as clinical guidance. If a line makes a clinical claim or names a clinical concept, it belongs to his register, because that is the lane he owns.
 
-**Jason's beats carry:** the clinical framework, the mechanism, the procedure, the term of art and its definition, the closing turn toward possibility.
+**David — editorial lane.** Structure, beat order, copy standards and format, the concrete example, the plain-language translation of a framework, the counter-argument, and the gut check. He is the seat that holds the editorial standard, so the brief's conformance to it is his.
 
-**David's beats carry:** the concrete example, the plain-language translation, the counter-argument, the gut check, the lived detail.
+**Why the split exists.** The failure mode of every short render has been a thin beat — a heading where an exchange should be. A single author writing both lanes summarises one of them, because the material for the second register gets compressed rather than written out. Assigning by lane means every beat arrives with its voice already attached, and the writer prompt has material to expand rather than material to interpret.
 
-**Both signatures appear on the brief.** It is filed once, but it is not one person's document, and a beat with no register assigned is a beat that will arrive thin.
+**Both names appear on the brief.** It is filed once, but it is not one person's document. A beat with no lane assigned is a beat that will arrive thin.
+
+**One consequence to keep in view.** David authors the editorial lane and also sits at the editorial gate. Where he is the author of a brief, editorial review of that same work is self-review, and a second reader is needed before dispatch. The clinical lane does not have this problem, because the compliance gate is held by a different seat.
 
 ## Cast Rules
 - Two-host engine only: David + Jason. Logan and Cross are RETIRED. Do not reintroduce.
@@ -44,7 +46,7 @@ Voice IDs are LOCKED. Never regenerate. Voice drift is a production failure.
 - Cut-offs end with a dash (—) and trigger a 200ms cut-in. Trailing off uses ellipses (...).
 - pause_after_ms: 200–400. 400 is the absolute ceiling. Realised through punctuation; the renderer does not send pause values to the model.
 - Fillers ("um," "uh," "like," "you know," "I mean"), stutters as repeated sounds with a dash, roughly one in every four to five turns. A filler replaces a pause.
-- Speaker mapping: Jason covers clinical literature and procedural frameworks; David provides grounding, gut checks, and dry sarcasm.
+- Speaker mapping follows lane: Jason carries the clinical material, David carries the editorial and grounded material.
 
 ## Engine
 - gemini-3.1-flash-tts-preview, multi-speaker.
