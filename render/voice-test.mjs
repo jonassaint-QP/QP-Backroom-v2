@@ -1,8 +1,30 @@
 // Voice-fit test. Purpose: hear Fenrir and Orus on real script before committing to a full render.
 //
 // There is NO text model call here. The turns already exist and are voiced as written, so a
-// voice question costs one TTS pass per section and nothing else. If the voices are wrong,
-// no script generation and no full episode were spent finding that out.
+// voice question costs one TTS pass per chunk and nothing else. If the voices are wrong, no
+// script generation and no full episode were spent finding that out.
+//
+// ---------------------------------------------------------------------------------------
+// WHY CHUNKING EXISTS (added 2026-09-29)
+//
+// The first version handed each section to the TTS model in one call - up to fifteen turns,
+// four hundred words, one generation. The output came back flat: the model drifts into a
+// narrator register partway through a long generation, and in multi-speaker mode it spends
+// its capacity holding two identities apart rather than performing either one.
+//
+// The same voice names sound far better in AI Studio, and the reason is context, not
+// casting. AI Studio auditions a short sample, one speaker, no preamble. So this version
+// matches those conditions: each call carries a small number of turns (CHUNK_TURNS), and
+// the mechanical instruction is replaced with a performance direction, which is the closest
+// analogue to the style prompt AI Studio applies.
+//
+// Chunks are concatenated back into one section, so the join points are silent and the
+// delivered file still reads as a single conversation.
+//
+// If it is STILL flat after this, the next lever is single-speaker mode: voice each host's
+// turns separately and interleave them, which is exactly what AI Studio does. That is a
+// bigger change and is deliberately not made here until short chunks have been ruled out.
+// ---------------------------------------------------------------------------------------
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -16,6 +38,17 @@ if (!KEY) {
 const TTS_MODEL = process.env.TTS_MODEL || 'gemini-3.1-flash-tts-preview';
 const VOICES = { David: 'Fenrir', Jason: 'Orus' };
 const BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
+
+// Four turns per call by default. Short enough that prosody does not drift; long enough
+// that the model still hears the two hosts answering each other rather than isolated lines.
+const CHUNK_TURNS = Number(process.env.CHUNK_TURNS || 4);
+
+// The performance direction. This is a style prompt, not an instruction set: it describes
+// how the conversation should sound, where the previous version told the model how to
+// interpret punctuation. Mechanical instruction produces mechanical delivery.
+const STYLE =
+  process.env.TTS_STYLE ||
+  'Read the following as a warm, unhurried conversation between two people genuinely talking to each other, not as a narration. Natural pacing, real reactions, no announcer voice. Every dash is a cut-in and every ellipsis is trailing off.\n\n';
 
 const [turnsPath, episodeId] = process.argv.slice(2);
 if (!turnsPath || !episodeId) {
@@ -41,6 +74,32 @@ async function call(model, body) {
 
 const words = s => s.split(/\s+/).filter(Boolean).length;
 
+async function voice(turns, label) {
+  const lines = turns.map(t => `${t.speaker}: ${t.text}`).join('\n');
+
+  const audioRes = await call(TTS_MODEL, {
+    contents: [{ role: 'user', parts: [{ text: STYLE + lines }] }],
+    generationConfig: {
+      responseModalities: ['AUDIO'],
+      speechConfig: {
+        multiSpeakerVoiceConfig: {
+          speakerVoiceConfigs: Object.entries(VOICES).map(([speaker, voiceName]) => ({
+            speaker,
+            voiceConfig: { prebuiltVoiceConfig: { voiceName } },
+          })),
+        },
+      },
+    },
+  });
+
+  const part = audioRes.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+  if (!part) {
+    console.error(`FAIL: ${label} returned no audio`);
+    process.exit(1);
+  }
+  return Buffer.from(part.inlineData.data, 'base64');
+}
+
 const chunks = [];
 for (let i = 0; i < sections.length; i++) {
   const n = i + 1;
@@ -57,30 +116,20 @@ for (let i = 0; i < sections.length; i++) {
     }
   }
 
-  const lines = turns.map(t => `${t.speaker}: ${t.text}`).join('\n');
   console.log(`section ${n}: ${turns.length} turns, ${turns.reduce((k, t) => k + words(t.text), 0)} words`);
 
-  const audioRes = await call(TTS_MODEL, {
-    contents: [{ role: 'user', parts: [{ text: 'TTS the following two-host conversation exactly as written. Treat every dash as a cut-in and every ellipsis as trailing off.\n\n' + lines }] }],
-    generationConfig: {
-      responseModalities: ['AUDIO'],
-      speechConfig: {
-        multiSpeakerVoiceConfig: {
-          speakerVoiceConfigs: Object.entries(VOICES).map(([speaker, voiceName]) => ({
-            speaker,
-            voiceConfig: { prebuiltVoiceConfig: { voiceName } },
-          })),
-        },
-      },
-    },
-  });
-
-  const part = audioRes.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
-  if (!part) {
-    console.error(`FAIL: section ${n} returned no audio`);
-    process.exit(1);
+  const pieces = [];
+  for (let s = 0; s < turns.length; s += CHUNK_TURNS) {
+    const slice = turns.slice(s, s + CHUNK_TURNS);
+    const label = `section ${n} chunk ${pieces.length + 1}`;
+    const pcm = await voice(slice, label);
+    pieces.push(pcm);
+    console.log(
+      `  ${label}: ${slice.length} turns, ${slice.reduce((k, t) => k + words(t.text), 0)} words, ${pcm.length} bytes`,
+    );
   }
-  chunks.push(Buffer.from(part.inlineData.data, 'base64'));
+
+  chunks.push(Buffer.concat(pieces));
   console.log(`section ${n}: ${chunks.at(-1).length} bytes PCM`);
 }
 
