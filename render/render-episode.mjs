@@ -11,11 +11,10 @@
 //   1. ONE CALL PER SECTION. Up to fifteen turns, four hundred words, single generation. The
 //      model drifts into narrator register partway through a long generation. Now chunked
 //      (CHUNK_TURNS), same as the audition.
-//   2. MECHANICAL INSTRUCTION. "TTS the following two-host conversation exactly as written.
-//      Treat every dash as a cut-in..." is an instruction set about punctuation. Mechanical
-//      instruction produces mechanical delivery. Now a performance direction.
+//   2. MECHANICAL INSTRUCTION. An instruction set about punctuation is mechanical instruction,
+//      and mechanical instruction produces mechanical delivery. Now a performance direction.
 //   3. PROSE PUNCTUATION SENT VERBATIM. Colons, semicolons and dashes are obeyed literally by
-//      the model - a colon says "land on this", a semicolon says "hold" - which produces the
+//      the model, a colon says "land on this", a semicolon says "hold", which produces the
 //      held-syllable, leaned-on-word effect. normalizeForSpeech() flattens those cues for the
 //      synthesiser only. The turns file written to out/ keeps the original punctuation.
 //
@@ -28,18 +27,22 @@
 // STYLE PROMPT, AS APPROVED (added 2026-09-29)
 //
 // Joshua's target register, assembled from the AI Studio presets rather than any one of them:
-// Friendly's warmth and micro-pauses, Promote's energy, minus Promote's elongated vowels -
+// Friendly's warmth and micro-pauses, Promote's energy, minus Promote's elongated vowels,
 // which were the exact thing that read as awkward on the first pass.
 //
 // Note on "commanding the room": Narration's own description is "commanding, rich vocal
 // modulation, dramatic pauses", and Narration ranked low. So the prompt below asks for command
-// of the room WITHOUT the modulation and WITHOUT dramatic pauses - it is the authority, not
-// the delivery tic, that is wanted. If a future edit reintroduces "rich vocal modulation" or
+// of the room WITHOUT the modulation and WITHOUT dramatic pauses. It is the authority, not the
+// delivery tic, that is wanted. If a future edit reintroduces "rich vocal modulation" or
 // "dramatic pauses" here, it is trending back toward the preset that was rejected.
 //
+// Punctuation in this constant is deliberately ASCII. An em dash is a model instruction to
+// stress what follows, which is the precise tic the speech pass exists to remove, so a non-
+// ASCII dash has no business in the style prompt itself.
+//
 // Long vowels are handled positively. The model follows "let vowels stay short" far better
-// than "do not elongate vowels" - a bare prohibition reads as a nudge toward the thing it
-// forbids. Only the two failure modes that actually occurred are stated as negatives.
+// than "do not elongate vowels", because a bare prohibition reads as a nudge toward the thing
+// it forbids. Only the two failure modes that actually occurred are stated as negatives.
 //
 // Override per run with the style field on the Render Episode workflow; leaving it blank
 // falls back to this constant.
@@ -58,7 +61,7 @@ const TTS_MODEL = process.env.TTS_MODEL || 'gemini-3.1-flash-tts-preview';
 const TEXT_MODEL = process.env.TEXT_MODEL || 'gemini-3.1-pro-preview';
 
 // Bodi is the approved voice. Overridable per host so a recast is a workflow field rather
-// than a code change - the point of the audition was to make this a one-line decision.
+// than a code change, the point of the audition was to make this a one-line decision.
 const VOICES = {
   David: process.env.VOICE_DAVID || 'Bodi',
   Jason: process.env.VOICE_JASON || 'Orus',
@@ -71,17 +74,21 @@ const SECTIONS = 3;
 const CHUNK_TURNS = Number(process.env.CHUNK_TURNS || 4);
 
 // Playback speed, applied after synthesis via ffmpeg atempo. Duration changes, pitch does not.
-// Speed 1.0 is the approved setting - Bodi's own pace is what Joshua signed off on.
-const SPEED = Number(process.env.TTS_SPEED || 1);
+// 1.2 is the approved setting. It is also past the 1.25 warning threshold only at 1.3, so the
+// workflow default sits just under the point where consonants start colliding.
+const SPEED = Number(process.env.TTS_SPEED || 1.2);
 if (!Number.isFinite(SPEED) || SPEED <= 0) {
   console.error('FAIL: TTS_SPEED must be a positive number');
   process.exit(1);
+}
+if (SPEED > 1.25) {
+  console.warn(`warning: TTS_SPEED ${SPEED} is past the point where consonants start colliding`);
 }
 
 // The approved style prompt. See the note at the top of this file before editing.
 const STYLE =
   process.env.TTS_STYLE ||
-  'You are two people talking, not narrators reading. Warm, energized, and in command of the room - someone who knows exactly what they are saying and is glad to be saying it. Keep a slightly quick clip, with small natural micro-pauses between thoughts rather than dramatic ones. Let vowels stay short and natural, and let words run together a little. Sentences end on a downward shrug. Do not articulate each word separately, and do not slow down to be understood.';
+  'You are two people talking, not narrators reading. Warm, energized, and in command of the room, someone who knows exactly what they are saying and is glad to be saying it. Keep a slightly quick clip, with small natural micro-pauses between thoughts rather than dramatic ones. Let vowels stay short and natural, and let words run together a little. Sentences end on a downward shrug. Do not articulate each word separately, and do not slow down to be understood.';
 
 // The script is written in one call PER SECTION, not one call for the whole episode.
 // A single call asked for 5,400 words returns roughly a quarter of that, every time.
@@ -90,9 +97,9 @@ const STYLE =
 // each call is given the tail of the one before it so a term of art defined earlier is
 // not defined again later.
 const SECTION_PLAN = [
-  'Section 1 of 3 — the cold open plus beats one and two.',
-  'Section 2 of 3 — beats three and four. This continues an episode already in progress: open by picking the conversation back up, and do not re-introduce or re-define any term of art that Section 1 already defined.',
-  'Section 3 of 3 — beats five and six plus the episode closing. The primary call to action is spoken on the final turn, once, and never mid-section. Do not re-introduce or re-define any term of art already defined earlier.',
+  'Section 1 of 3: the cold open plus beats one and two.',
+  'Section 2 of 3: beats three and four. This continues an episode already in progress: open by picking the conversation back up, and do not re-introduce or re-define any term of art that Section 1 already defined.',
+  'Section 3 of 3: beats five and six plus the episode closing. The primary call to action is spoken on the final turn, once, and never mid-section. Do not re-introduce or re-define any term of art already defined earlier.',
 ];
 const SECTION_WORDS =
   'Length for this section: 1,800 to 2,150 spoken words. Count the words in the lines you produce before you return, and state that count on its own line after the array. If you cannot reach 1,800 words from the material without padding, say so in that same line instead of inflating the dialogue.';
@@ -170,7 +177,7 @@ const brief = fs.readFileSync(briefPath, 'utf8');
 const parts = [];
 for (let i = 0; i < SECTIONS; i++) {
   const prior = parts.length
-    ? `\n\nSECTION ${i} AS ALREADY WRITTEN — the closing turns of the previous section. This is context for continuity only: do not repeat it, do not restate it, and do not summarise it before continuing.\n\n${parts
+    ? `\n\nSECTION ${i} AS ALREADY WRITTEN: the closing turns of the previous section. This is context for continuity only. Do not repeat it, do not restate it, and do not summarise it before continuing.\n\n${parts
         .at(-1)
         .slice(-TAIL_TURNS)
         .map(t => `${t.speaker}: ${t.text}`)

@@ -31,7 +31,7 @@
 //    "hold, then continue". A dash means "stress the next thing". The TTS model obeys those
 //    marks literally, which is exactly the held-syllable effect. normalizeForSpeech()
 //    rewrites those cues into the flat punctuation people actually speak in. Written prose
-//    keeps its punctuation - this happens only on the copy sent to the synthesiser.
+//    keeps its punctuation, this happens only on the copy sent to the synthesiser.
 //
 // 2. STYLE PROMPT. The first version asked for warmth but never told the model to relax its
 //    articulation, and "clear" is the default register of a TTS model given no other
@@ -61,15 +61,21 @@ const CHUNK_TURNS = Number(process.env.CHUNK_TURNS || 4);
 // that auditioning six voices is not a long wait.
 const SAMPLE_WORDS = Number(process.env.SAMPLE_WORDS || 450);
 
-const SPEED = Number(process.env.TTS_SPEED || 1);
+// 1.2 is the approved setting, matching the render path.
+const SPEED = Number(process.env.TTS_SPEED || 1.2);
 if (!Number.isFinite(SPEED) || SPEED <= 0) {
   console.error('FAIL: TTS_SPEED must be a positive number');
   process.exit(1);
 }
+if (SPEED > 1.25) {
+  console.warn(`warning: TTS_SPEED ${SPEED} is past the point where consonants start colliding`);
+}
 
-// Kept in sync with render-episode.mjs. See the note at the top of this file.
+// Kept in sync with render-episode.mjs. See the note at the top of this file. Punctuation is
+// deliberately ASCII: an em dash in a style prompt is itself an instruction to stress what
+// follows, which is the tic this whole path exists to remove.
 const DEFAULT_STYLE =
-  'You are two people talking, not narrators reading. Warm, energized, and in command of the room - someone who knows exactly what they are saying and is glad to be saying it. Keep a slightly quick clip, with small natural micro-pauses between thoughts rather than dramatic ones. Let vowels stay short and natural, and let words run together a little. Sentences end on a downward shrug. Do not articulate each word separately, and do not slow down to be understood.';
+  'You are two people talking, not narrators reading. Warm, energized, and in command of the room, someone who knows exactly what they are saying and is glad to be saying it. Keep a slightly quick clip, with small natural micro-pauses between thoughts rather than dramatic ones. Let vowels stay short and natural, and let words run together a little. Sentences end on a downward shrug. Do not articulate each word separately, and do not slow down to be understood.';
 
 const STYLE = process.env.TTS_STYLE || DEFAULT_STYLE;
 
@@ -156,6 +162,7 @@ async function voice(chunk, label) {
 function wav(pcm, rate = 24000, ch = 1, bits = 16) {
   const h = Buffer.alloc(44);
   h.write('RIFF', 0);
+  h.writeUInt32LE(36 + pcm.length, 4);
   h.write('WAVE', 8);
   h.write('fmt ', 12);
   h.writeUInt32LE(16, 16);
