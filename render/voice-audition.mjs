@@ -4,9 +4,7 @@
 // WHY THIS IS SEPARATE FROM voice-test.mjs (added 2026-09-29)
 //
 // voice-test.mjs renders the conversation with two speakers in a single call. That is the
-// shape the episode needs, but it is NOT the shape AI Studio auditions a voice in - AI
-// Studio reads a short sample from one speaker with a style prompt, which is why the same
-// voice names sound better there.
+// shape the episode needs, but it is NOT the shape AI Studio auditions a voice in.
 //
 // This script isolates the variable. One voice, one speaker per call, the host's own lines
 // from the episode, nothing else.
@@ -37,11 +35,11 @@
 //
 // 2. STYLE PROMPT. The first version asked for warmth but never told the model to relax its
 //    articulation, and "clear" is the default register of a TTS model given no other
-//    direction. An unhedged negative instruction is what suppresses it.
+//    direction. The style prompt below is what fixed it.
 //
-// Note the deliberate wording below. Asking the model NOT to do something works far worse
-// than describing the thing it should do instead, so most of the prompt is spent describing
-// ordinary speech rather than forbidding careful speech.
+// The style constant is kept IDENTICAL to the one in render-episode.mjs, deliberately, so an
+// audition predicts the episode. If the two ever drift apart, an audition stops being
+// evidence about the render.
 // ---------------------------------------------------------------------------------------
 import fs from 'node:fs';
 import path from 'node:path';
@@ -69,10 +67,9 @@ if (!Number.isFinite(SPEED) || SPEED <= 0) {
   process.exit(1);
 }
 
-// Relaxed, slightly under-enunciated speech. This is the lever that was missing on the
-// first pass. TTS_SPEED above 1.0 helps the same problem and is a separate control.
+// Kept in sync with render-episode.mjs. See the note at the top of this file.
 const DEFAULT_STYLE =
-  'You are two people talking, not a narrator reading. Speak the way someone talks when they are relaxed and mid-thought - words run together a little, some syllables get swallowed, sentences end on a downward shrug rather than a landing. Keep the pace conversational and slightly quick. Do not articulate each word separately. Do not lean on syllables or stretch the ends of words for emphasis. Do not slow down to be understood.';
+  'You are two people talking, not narrators reading. Warm, energized, and in command of the room - someone who knows exactly what they are saying and is glad to be saying it. Keep a slightly quick clip, with small natural micro-pauses between thoughts rather than dramatic ones. Let vowels stay short and natural, and let words run together a little. Sentences end on a downward shrug. Do not articulate each word separately, and do not slow down to be understood.';
 
 const STYLE = process.env.TTS_STYLE || DEFAULT_STYLE;
 
@@ -86,6 +83,7 @@ function normalizeForSpeech(text) {
     .replace(/\s*:\s*/g, ', ') // colon -> comma, removes the "land on this" cue
     .replace(/\s*[\u201C\u201D\u2018\u2019"]/g, '') // quote marks drop out
     .replace(/\s*[()]/g, ' ') // parentheses drop out
+    .replace(/\*+/g, '') // stray markdown emphasis must never be read aloud
     .replace(/\.{2,}/g, '. ') // ellipses collapse, trailing-off is a style matter
     .replace(/\s{2,}/g, ' ')
     .trim();
@@ -158,7 +156,6 @@ async function voice(chunk, label) {
 function wav(pcm, rate = 24000, ch = 1, bits = 16) {
   const h = Buffer.alloc(44);
   h.write('RIFF', 0);
-  h.writeUInt32LE(36 + pcm.length, 4);
   h.write('WAVE', 8);
   h.write('fmt ', 12);
   h.writeUInt32LE(16, 16);

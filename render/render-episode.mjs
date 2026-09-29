@@ -23,6 +23,27 @@
 // voice each host's turns separately and interleave, which is exactly what AI Studio does.
 // Deliberately not done here until short chunks have been ruled out in the full render.
 // ---------------------------------------------------------------------------------------
+//
+// ---------------------------------------------------------------------------------------
+// STYLE PROMPT, AS APPROVED (added 2026-09-29)
+//
+// Joshua's target register, assembled from the AI Studio presets rather than any one of them:
+// Friendly's warmth and micro-pauses, Promote's energy, minus Promote's elongated vowels -
+// which were the exact thing that read as awkward on the first pass.
+//
+// Note on "commanding the room": Narration's own description is "commanding, rich vocal
+// modulation, dramatic pauses", and Narration ranked low. So the prompt below asks for command
+// of the room WITHOUT the modulation and WITHOUT dramatic pauses - it is the authority, not
+// the delivery tic, that is wanted. If a future edit reintroduces "rich vocal modulation" or
+// "dramatic pauses" here, it is trending back toward the preset that was rejected.
+//
+// Long vowels are handled positively. The model follows "let vowels stay short" far better
+// than "do not elongate vowels" - a bare prohibition reads as a nudge toward the thing it
+// forbids. Only the two failure modes that actually occurred are stated as negatives.
+//
+// Override per run with the style field on the Render Episode workflow; leaving it blank
+// falls back to this constant.
+// ---------------------------------------------------------------------------------------
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -50,18 +71,17 @@ const SECTIONS = 3;
 const CHUNK_TURNS = Number(process.env.CHUNK_TURNS || 4);
 
 // Playback speed, applied after synthesis via ffmpeg atempo. Duration changes, pitch does not.
+// Speed 1.0 is the approved setting - Bodi's own pace is what Joshua signed off on.
 const SPEED = Number(process.env.TTS_SPEED || 1);
 if (!Number.isFinite(SPEED) || SPEED <= 0) {
   console.error('FAIL: TTS_SPEED must be a positive number');
   process.exit(1);
 }
 
-// Relaxed, slightly under-enunciated speech. Most of this describes what to do rather than
-// what not to do, because an unhedged negative instruction reads as a nudge toward the very
-// thing being forbidden.
+// The approved style prompt. See the note at the top of this file before editing.
 const STYLE =
   process.env.TTS_STYLE ||
-  'You are two people talking, not narrators reading. Speak the way someone talks when they are relaxed and mid-thought - words run together a little, some syllables get swallowed, sentences end on a downward shrug rather than a landing. Keep the pace conversational and slightly quick. Do not articulate each word separately. Do not lean on syllables or stretch the ends of words for emphasis. Do not slow down to be understood.';
+  'You are two people talking, not narrators reading. Warm, energized, and in command of the room - someone who knows exactly what they are saying and is glad to be saying it. Keep a slightly quick clip, with small natural micro-pauses between thoughts rather than dramatic ones. Let vowels stay short and natural, and let words run together a little. Sentences end on a downward shrug. Do not articulate each word separately, and do not slow down to be understood.';
 
 // The script is written in one call PER SECTION, not one call for the whole episode.
 // A single call asked for 5,400 words returns roughly a quarter of that, every time.
