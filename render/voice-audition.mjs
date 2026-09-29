@@ -9,19 +9,39 @@
 // voice names sound better there.
 //
 // This script isolates the variable. One voice, one speaker per call, the host's own lines
-// from the episode, nothing else. If a voice sounds good here and bad in voice-test.mjs,
-// the voice is fine and the two-speaker call is the problem - which is a fixable plumbing
-// question rather than a casting one. If it sounds bad here too, the voice is wrong and no
-// amount of prompt work will save it.
+// from the episode, nothing else.
 //
-// So the useful comparison is NOT audition-vs-mp3. It is:
-//   node render/voice-audition.mjs <turns> <voice> David
-//   node render/voice-audition.mjs <turns> <voice> Jason
-//   ... run once per candidate voice, same lines, then compare candidates against each other.
-//   Then audition the current pair the same way. If Fenrir also sounds good solo, the pair
-//   was never the problem.
+// The useful comparison is NOT audition-vs-mp3. It is:
+//   node render/voice-audition.mjs <turns> Bodi David
+//   node render/voice-audition.mjs <turns> Fenrir David
+//   ... same lines, different voice. If Fenrir also sounds good solo, the pair was never
+//   the problem and the two-speaker call is where the work is.
 //
 // No text model call. No script generation. A voice check costs one TTS pass per chunk.
+// ---------------------------------------------------------------------------------------
+//
+// ---------------------------------------------------------------------------------------
+// OVER-ENUNCIATION (added 2026-09-29)
+//
+// Reported symptom: the voice holds the end of a word to emphasise it, and leans on each
+// syllable. Awkward, effortful, not how a person talks.
+//
+// Two causes, and both are ours rather than the voice's.
+//
+// 1. PUNCTUATION CUES. This script was written to be read, so it is punctuated the way
+//    prose is punctuated. A colon means "here comes a list, land on it". A semicolon means
+//    "hold, then continue". A dash means "stress the next thing". The TTS model obeys those
+//    marks literally, which is exactly the held-syllable effect. normalizeForSpeech()
+//    rewrites those cues into the flat punctuation people actually speak in. Written prose
+//    keeps its punctuation - this happens only on the copy sent to the synthesiser.
+//
+// 2. STYLE PROMPT. The first version asked for warmth but never told the model to relax its
+//    articulation, and "clear" is the default register of a TTS model given no other
+//    direction. An unhedged negative instruction is what suppresses it.
+//
+// Note the deliberate wording below. Asking the model NOT to do something works far worse
+// than describing the thing it should do instead, so most of the prompt is spent describing
+// ordinary speech rather than forbidding careful speech.
 // ---------------------------------------------------------------------------------------
 import fs from 'node:fs';
 import path from 'node:path';
@@ -48,15 +68,28 @@ if (!Number.isFinite(SPEED) || SPEED <= 0) {
   console.error('FAIL: TTS_SPEED must be a positive number');
   process.exit(1);
 }
-if (SPEED > 1.25) {
-  console.warn(`warning: TTS_SPEED ${SPEED} is past the point where consonants start colliding`);
-}
 
-// The style prompt. Same language as voice-test.mjs, minus the two-host framing, because
-// there is only one speaker here and telling the model otherwise muddies the read.
-const STYLE =
-  process.env.TTS_STYLE ||
-  'Read the following as a warm, unhurried person talking to a listener they respect, not as a narration. Natural pacing, real reactions, no announcer voice. Every dash is a cut-in and every ellipsis is trailing off.\n\n';
+// Relaxed, slightly under-enunciated speech. This is the lever that was missing on the
+// first pass. TTS_SPEED above 1.0 helps the same problem and is a separate control.
+const DEFAULT_STYLE =
+  'You are two people talking, not a narrator reading. Speak the way someone talks when they are relaxed and mid-thought - words run together a little, some syllables get swallowed, sentences end on a downward shrug rather than a landing. Keep the pace conversational and slightly quick. Do not articulate each word separately. Do not lean on syllables or stretch the ends of words for emphasis. Do not slow down to be understood.';
+
+const STYLE = process.env.TTS_STYLE || DEFAULT_STYLE;
+
+// Prose punctuation rewritten into speech punctuation. See the note at the top of the file:
+// the model follows these marks literally, and the list-shaped marks are what produce the
+// held-syllable delivery.
+function normalizeForSpeech(text) {
+  return text
+    .replace(/\s*[\u2014\u2013]\s*/g, ', ') // em / en dash -> comma
+    .replace(/\s*;\s*/g, '. ') // semicolon -> full stop
+    .replace(/\s*:\s*/g, ', ') // colon -> comma, removes the "land on this" cue
+    .replace(/\s*[\u201C\u201D\u2018\u2019"]/g, '') // quote marks drop out
+    .replace(/\s*[()]/g, ' ') // parentheses drop out
+    .replace(/\.{2,}/g, '. ') // ellipses collapse, trailing-off is a style matter
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
 
 const [turnsPath, voiceName, host] = process.argv.slice(2);
 if (!turnsPath || !voiceName || !host) {
@@ -80,7 +113,7 @@ for (const section of sections) {
     if (t.speaker !== host) continue;
     const n = t.text.split(/\s+/).filter(Boolean).length;
     if (total + n > SAMPLE_WORDS) break;
-    lines.push(t.text);
+    lines.push(normalizeForSpeech(t.text));
     total += n;
   }
   if (total >= SAMPLE_WORDS) break;
@@ -103,7 +136,10 @@ async function call(body) {
 
 async function voice(chunk, label) {
   const audioRes = await call({
-    contents: [{ role: 'user', parts: [{ text: STYLE + chunk.join('\n\n') }] }],
+    // The style is prepended per chunk, not once per file: each call is generated
+    // independently, so a chunk that does not carry the direction gets the model's default
+    // register back.
+    contents: [{ role: 'user', parts: [{ text: `${STYLE}\n\n${chunk.join('\n\n')}` }] }],
     generationConfig: {
       responseModalities: ['AUDIO'],
       // Single speaker, which is the whole point of this script. No multiSpeakerVoiceConfig.
