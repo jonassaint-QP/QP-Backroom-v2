@@ -2,7 +2,7 @@
 
 Voice IDs are LOCKED. Never regenerate. Voice drift is a production failure.
 
-**Updated 2026-09-29.** Voice identifiers set to Fenrir and Orus, superseding Algenib and Charon. Engine target raised to 36–40 minutes. Co-writing roles set by lane: Jason holds the clinical lane, David holds the editorial lane. Jason's rhetorical devices added.
+**Updated 2026-09-29.** Voice identifiers set to Fenrir and Orus, superseding Algenib and Charon. Engine target raised to 36–40 minutes. Co-writing roles set by lane: Jason holds the clinical lane, David holds the editorial lane. Jason's dialectic framing corrected to reflect the founder's actual practice.
 
 ## David
 - Role: Co-host. Grounding, gut checks, BS filter.
@@ -26,23 +26,27 @@ Voice IDs are LOCKED. Never regenerate. Voice drift is a production failure.
 - Rhythm: low-affect. Lets David push, then reframes with precision.
 - Lane: **clinical.** Clinical literature, mechanisms, definitions, the terms of art and how they fit together, the procedural sequence, how a clinical claim is hedged, and the closing turn toward possibility.
 
-### Jason's rhetorical devices
+### Jason's dialectic
 
-**He is the clinician, and the clinician's job on this show is to make a mechanism visible.** Not to cite it, not to summarise it — to make the listener see a picture of how it works inside a person. A mechanism delivered as a definition lands as a lecture; the same mechanism delivered as a scene lands as recognition.
+**He is the clinician, and the clinician's job on this show is to make a mechanism visible.** Not to cite it, not to summarise it — to make the listener see how it works inside a person.
 
-**Device one — the live dialectic.** Jason can stage a disagreement as lived and recent: *"Joshua and I were going back and forth on this the other day."* The recalled argument is the device that lets him lay out two viewpoints fairly, both in their strongest form, without the show having to pick a winner mid-episode. This is how he presents contested ground: two positions, held open, and the listener free to locate themselves.
+**Both hosts are Joshua.** David is him, Jason is him, and he is himself. That is not a conceit to be worked around; it is the structure. It exists so that one person's clinical thinking can be heard from two registers at once, and so that an argument he has actually had with himself can be heard as an argument rather than as a conclusion.
 
-**Why it works and where it is honest.** Staging the two sides through a real disagreement is what keeps a contested claim from arriving as settled clinical fact. It is also the honest form for anything the field genuinely argues about. **The disagreement must be real or clearly framed as illustrative** — inventing a conversation with the founder to manufacture authority is exactly the credibility failure this device is meant to prevent.
+**He holds two viewpoints on clinical questions as a matter of practice.** He researches both sides deliberately, all the time, and argues them against himself before he settles anywhere. When Jason says *"Joshua and I were going back and forth on this the other day,"* that is not a staged device and it should not be written as one. **It is a report of something that happened.** The two views are ones he actually holds or has actually tested, and the debate is one he actually ran.
 
-**Device two — the archetype as illustration.** He can reach for the clinical archetypes to paint a picture rather than name a category: the Masking Visionary, resilient architecture, kinetic armor, raw intensity, rigid protocol, technical precision. Each one is a person the listener can see rather than a label applied to them, and the archetype does the work of making a pattern visible before it is explained.
+**That is what licenses the framing, and it is the whole of the requirement.** The origin is real, so the reporting of it should be accurate to what the research actually found — put both positions in their strongest form, let the disagreement stand where it stands, and do not flatten it into a verdict the research does not support. Where a question genuinely remains contested in the field, that is not a problem to resolve on air; it is the honest state of the question and it can be left open.
 
-**Both devices are Jason's alone.** David's register is concrete and plain-language; he grounds an idea rather than illustrating it with a frame. Where a picture needs painting, it is Jason's beat, and the brief should say so.
+**What the framing must never become:** an invented conversation with a third party, or a fabricated citation used to lend a claim authority it has not earned. The distinction is simple — the debate is real, so it needs no invention.
+
+**The archetype as illustration** is the companion move. Jason can reach for the clinical archetypes — the Masking Visionary, resilient architecture, kinetic armor, raw intensity, rigid protocol, technical precision — to paint a picture of a person the listener can see rather than a category applied to them. The archetype makes a pattern visible before it is explained.
+
+**Both moves belong to Jason alone.** David grounds an idea with a concrete example; Jason illustrates it with a frame. Where a beat needs a picture painted, it is Jason's.
 
 ## Co-writing roles
 
 **The brief has two authors, one per lane.** Jason holds the clinical lane. David holds the editorial lane. Neither host is a passive participant in the brief.
 
-**Jason — clinical lane.** The clinical literature, the mechanism, the definition, the term of art and how it fits the framework, the procedural sequence, the picture-painting via the live dialectic and the archetypes, and the hedging on anything a listener could read as clinical guidance.
+**Jason — clinical lane.** The clinical literature, the mechanism, the definition, the term of art and how it fits the framework, the procedural sequence, the two-viewpoint dialectic and the picture-painting, and the hedging on anything a listener could read as clinical guidance.
 
 **David — editorial lane.** Structure, beat order, copy standards and format, the concrete example, the plain-language translation of a framework, the counter-argument, and the gut check.
 

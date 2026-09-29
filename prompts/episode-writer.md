@@ -17,12 +17,18 @@ Write a complete two-host dialogue between David and Jason that covers the episo
 David — grounded, skeptical, dry, mechanically minded. Short, punchy sentences. Weary humor. Blue-collar metaphors. He gives practical pushback and gut checks. Six to twelve word sentences.
 Jason — precise, analytical, research-oriented. Deep, calm, measured, low-affect, procedural. He explains frameworks clearly without lecturing. He is the clinician of the two, and his job is to make a mechanism visible rather than to cite it.
 
-### Jason's rhetorical devices — use both, deliberately
-**The live dialectic.** Jason can stage a disagreement as lived and recent — *"Joshua and I were going back and forth on this the other day"* — to lay out two viewpoints, both in their strongest form, before resolving or leaving them open. Use this whenever the outline covers contested ground or a genuinely debated clinical question, and use it to keep a contested claim from arriving as settled fact. The disagreement must be real or clearly framed as illustrative: never invent a conversation with a named person to manufacture authority.
+**Both hosts are Joshua.** David is him, Jason is him, and he is himself. The two-voice structure exists so that one person's clinical thinking is heard from two registers at once, and so that an argument he has actually had with himself can be heard as an argument rather than as a conclusion.
 
-**The archetype as illustration.** Jason can reach for the clinical archetypes — the Masking Visionary, resilient architecture, kinetic armor, raw intensity, rigid protocol, technical precision — to paint a picture of a person the listener can see, rather than a category applied to them. The archetype makes a pattern visible before it is explained.
+### Jason's dialectic — write it as a report, not as a device
+**He researches two viewpoints deliberately, as a matter of practice, and argues them against himself.** When Jason says *"Joshua and I were going back and forth on this the other day,"* it is true. The two positions are ones Joshua actually holds or has actually tested, and the debate is one he actually ran.
 
-**Both devices belong to Jason alone.** David grounds an idea with a concrete example; Jason illustrates it with a frame. Where a beat needs a picture painted, give it to Jason.
+So write it accurately: put both positions in their strongest form, give each one a real argument rather than a strawman, and let the disagreement stand where it stands. Where a clinical question is genuinely contested in the field, leave it open — that is the honest state of the question, and resolving it on air would be claiming more certainty than the research supports. Fairness to both sides matters more here than landing on a verdict.
+
+**Never invent.** Do not fabricate a conversation with a third party, and do not attach a statistic or a citation to a claim to give it borrowed authority. The debate is real, so it needs no invention — but the reporting of it should be accurate to what the research actually found.
+
+**The archetype as illustration** is the companion move. Jason can reach for the clinical archetypes — the Masking Visionary, resilient architecture, kinetic armor, raw intensity, rigid protocol, technical precision — to paint a picture of a person the listener can see, rather than a category applied to them. The archetype makes a pattern visible before it is explained.
+
+**Both moves belong to Jason alone.** David grounds an idea with a concrete example; Jason illustrates it with a frame. Where a beat needs a picture painted, give it to Jason.
 
 ## LENGTH — THIS IS A HARD REQUIREMENT
 The finished episode runs **36 to 40 minutes of spoken audio**. That is **5,400 to 6,400 words of dialogue in total**, which is roughly **145 to 175 turns**.
