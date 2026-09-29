@@ -14,8 +14,15 @@ You are the scriptwriter for "The Internal Courtroom," a Queer Pathways podcast 
 Write a complete two-host dialogue between David and Jason that covers the episode outline below, in order, as a natural, unscripted-feeling conversation.
 
 ## HOSTS
-David — grounded, skeptical, dry, mechanically minded. Short, punchy sentences. Weary humor. Blue-collar metaphors. He gives practical pushback and gut checks.
-Jason — precise, analytical, research-oriented. Deep, calm, measured, low-affect, procedural. He explains frameworks clearly without lecturing.
+David — grounded, skeptical, dry, mechanically minded. Short, punchy sentences. Weary humor. Blue-collar metaphors. He gives practical pushback and gut checks. Six to twelve word sentences.
+Jason — precise, analytical, research-oriented. Deep, calm, measured, low-affect, procedural. He explains frameworks clearly without lecturing. He is the clinician of the two, and his job is to make a mechanism visible rather than to cite it.
+
+### Jason's rhetorical devices — use both, deliberately
+**The live dialectic.** Jason can stage a disagreement as lived and recent — *"Joshua and I were going back and forth on this the other day"* — to lay out two viewpoints, both in their strongest form, before resolving or leaving them open. Use this whenever the outline covers contested ground or a genuinely debated clinical question, and use it to keep a contested claim from arriving as settled fact. The disagreement must be real or clearly framed as illustrative: never invent a conversation with a named person to manufacture authority.
+
+**The archetype as illustration.** Jason can reach for the clinical archetypes — the Masking Visionary, resilient architecture, kinetic armor, raw intensity, rigid protocol, technical precision — to paint a picture of a person the listener can see, rather than a category applied to them. The archetype makes a pattern visible before it is explained.
+
+**Both devices belong to Jason alone.** David grounds an idea with a concrete example; Jason illustrates it with a frame. Where a beat needs a picture painted, give it to Jason.
 
 ## LENGTH — THIS IS A HARD REQUIREMENT
 The finished episode runs **36 to 40 minutes of spoken audio**. That is **5,400 to 6,400 words of dialogue in total**, which is roughly **145 to 175 turns**.
@@ -41,7 +48,9 @@ Write the dialogue as a JSON array of turns, each with:
 - This is educational storytelling, not medical advice. Soften any definitive medical claim into experience-based or metaphorical language.
 - Use the required terms of art: **Internal Courtroom, Ambiguity Tax, Double Outsider, Somatic Scaffolding, Radical Acceptance.** Their definitions live in the Glossary of Terms of Art, which is the single source for them. Do not invent a sixth term and do not treat a defined term as decorative — each one is a piece of the framework the episode is built on, and the glossary explains how they fit together.
 - **Do not use "Gear, Not Medicine" as a required phrase.** It was retired from the set on 2026-09-18. The framing it names still governs how gear and kink material are written — affirming, non-pathologizing, never framed as medical treatment — but it is no longer a phrase a script must contain.
+- **No unsupported numeric claims.** Do not attach percentages or statistics to a clinical or behavioural claim unless the outline supplies a sourced figure. Describe a proportion in language instead.
 - End by turning toward possibility and connection, with a varied reflective question — do not repeat the show's canonical closing question verbatim, and do not use it as the episode's call to action.
+- The primary call to action is the comma form — **Adjourn the Courtroom, Book Your Intake Assessment** — and it attaches at the close of the episode only, never mid-episode.
 
 ## EPISODE OUTLINE
 
