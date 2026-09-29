@@ -6,11 +6,19 @@ on:
       brief:
         description: Path to the episode brief in this repo
         required: true
-        default: prompts/episode-brief-centaur.md
+        default: prompts/episode-brief-internal-courtroom.md
       episode_id:
         description: Episode slug used for output filenames
         required: true
-        default: centaur-01
+        default: internal-courtroom-01
+      speed:
+        description: Playback speed multiplier (1.0 = model pace, 1.1 = slightly quicker)
+        required: false
+        default: '1'
+      style:
+        description: Style prompt. Leave blank for the built-in one - fill it in to A/B a change.
+        required: false
+        default: ''
 
 jobs:
   render:
@@ -19,7 +27,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Render episode
@@ -27,9 +35,11 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           TEXT_MODEL: gemini-3.1-pro-preview
           TTS_MODEL: gemini-3.1-flash-tts-preview
+          TTS_SPEED: ${{ inputs.speed }}
+          TTS_STYLE: ${{ inputs.style }}
         run: node render/render-episode.mjs "${{ inputs.brief }}" "${{ inputs.episode_id }}"
       - name: Upload episode
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ inputs.episode_id }}
           path: out/
