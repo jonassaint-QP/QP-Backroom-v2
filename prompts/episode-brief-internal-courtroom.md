@@ -20,6 +20,20 @@
 
 ---
 
+## Pre-Dispatch Clearance (mandatory)
+
+**This brief is cleared before dispatch, not the script after it.** Editorial review clears structure first, then compliance review clears content. Only when both have cleared does the render run.
+
+**Why the gate sits here rather than after generation.** The render is a single run: the text model writes the script and the TTS engine voices it in the same pass, producing the mp3 and the turn array together. There is therefore no script-only artifact waiting to be cleared afterwards, and a compliance failure discovered after the render does not stop publication — it only means the render was already spent. The brief is also the only artifact in this pipeline a person actually writes; everything downstream is machine output.
+
+**Editorial clearance covers:** the beats and their order, the section split and its word targets, the cast and voice identifiers, the terms of art, and the exclusions.
+
+**Compliance clearance covers:** the claims made, the clinical framing, the authority references, the boundary conventions, and the prohibited content — including the clinical skill names, the founder's geographic boundary, and the halted-framing list below.
+
+**The rendered turn array is still checked against this brief after the render**, but that check is verification that the brief was followed, not a clearance gate. Where the render departs from a cleared brief, the correct response is to correct the brief and re-render, not to publish an uncleared departure.
+
+---
+
 ## Section Distribution and Production Architecture
 
 The renderer parses the script into three equal sections. To ensure each third stands independently and avoids mid-turn truncation, the brief designs for a strict word-split target per section. Section one targets 1,800 to 2,150 words covering the cold open plus beats one and two. Section two targets 1,800 to 2,150 words covering beats three and four. Section three targets 1,800 to 2,150 words covering beats five and six plus the episode closing. Total target dialogue across the three sections sits at 5,400 to 6,450 words.
@@ -73,12 +87,12 @@ The hosts conclude the episode by turning toward possibility rather than offerin
 ## PRODUCTION NOTES / QA FLAGS
 
 - **No unsupported numeric claims in this outline or in the script.** A "forty percent cognitive budget" figure was previously flagged and removed; that figure and its relatives do not return. Where a proportion is needed, describe it in language — "a substantial share," "most of the day" — rather than attaching a percentage.
-- Clinical skill names, including the STOP skill and the TIPP protocols, are descriptive only. They are named as DBT names them and are never presented as prescriptive treatment for a listener.
+- Clinical skill names, including the STOP skill and the TIPP protocols, are descriptive only. They are named as DBT names them and are never presented as prescriptive treatment for a listener. **Flagged for compliance review at the brief stage.**
 - This is educational storytelling, not medical advice. Soften any definitive medical claim into experience-based or metaphorical language.
 - **Never reference Cleveland or Ohio in any copy** — founder's regulatory boundary, 2026-09-16.
 - **Toronto Pivot HALTED (2026-09-16):** no Toronto-pivot framing, no host stories, no Loop Hospitality copy. The Philly/Toronto radical-acceptance case is expressly exempted and confirmed as deliberate.
 - Keep David's sentences six to twelve words in the final script; Jason carries the procedural explanation.
-- Route the final script through Adam for public-facing clearance per gatekeeping rule. Adam retires 2026-10-11; the clearance function is unchanged, only the occupant is.
+- **Post-render verification, not clearance.** Check the generated turn array against this brief — all beats covered in order, terms of art present, CTA at the close only, no unsupported numeric claims. A departure means the brief gets corrected and the episode re-rendered.
 - Chemsex/OCSB topics are not in this outline. Do not add them. Kink and leather references stay in the affirming, non-pathologizing frame consistent with QP policy.
 
 *Filed by Eva, Executive Assistant, on the founder's brief of 2026-09-29. No client identifiers, no credentials, no clinical detail and no financial content appear in this document.*
