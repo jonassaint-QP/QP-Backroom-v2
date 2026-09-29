@@ -11,7 +11,7 @@ if (!KEY) {
 
 const TTS_MODEL = process.env.TTS_MODEL || 'gemini-3.1-flash-tts-preview';
 const TEXT_MODEL = process.env.TEXT_MODEL || 'gemini-3.1-pro-preview';
-const VOICES = { David: 'Algenib', Jason: 'Charon' };
+const VOICES = { David: 'Fenrir', Jason: 'Orus' };
 const SECTIONS = 3;
 
 const [briefPath, episodeId] = process.argv.slice(2);
