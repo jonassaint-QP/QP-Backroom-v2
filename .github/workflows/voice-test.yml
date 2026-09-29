@@ -12,9 +12,9 @@ on:
         required: true
         default: internal-courtroom-01
       speed:
-        description: Playback speed multiplier (1.0 = model pace, 1.1 = slightly quicker)
+        description: Playback speed multiplier. 1.2 is the approved setting.
         required: false
-        default: '1'
+        default: '1.2'
       style:
         description: Style prompt. Leave blank for the built-in one - fill it in to A/B a change.
         required: false
