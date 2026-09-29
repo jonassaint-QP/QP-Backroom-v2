@@ -11,6 +11,10 @@ on:
         description: Episode slug used for output filenames
         required: true
         default: internal-courtroom-01
+      speed:
+        description: Playback speed multiplier (1.0 = model pace, 1.1 = slightly quicker)
+        required: false
+        default: '1'
 
 jobs:
   voice-test:
@@ -19,16 +23,17 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Voice the turns
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           TTS_MODEL: gemini-3.1-flash-tts-preview
+          TTS_SPEED: ${{ inputs.speed }}
         run: node render/voice-test.mjs "${{ inputs.turns }}" "${{ inputs.episode_id }}"
       - name: Upload voice test
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ inputs.episode_id }}-voice-test
           path: out/

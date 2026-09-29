@@ -25,6 +25,27 @@
 // turns separately and interleave them, which is exactly what AI Studio does. That is a
 // bigger change and is deliberately not made here until short chunks have been ruled out.
 // ---------------------------------------------------------------------------------------
+//
+// ---------------------------------------------------------------------------------------
+// TEMPO (added 2026-09-29)
+//
+// TTS_SPEED multiplies playback rate after synthesis, via ffmpeg's atempo filter. atempo
+// changes duration without moving pitch, so a voice that reads too slow keeps its character
+// instead of turning into a chipmunk. It is applied AFTER the chunks are joined, so every
+// chunk gets the same treatment and no segment ends up faster than another.
+//
+// Set it as an env var or workflow input. 1.0 is the model's own pace.
+//
+// Two cautions. First, this does not change the synthesis - if a voice sounds flat, speed
+// will not warm it up, and at tempo above roughly 1.25 consonants start colliding. Second,
+// speeding the file up shortens the reported duration, so the under-ten-minutes warning can
+// fire on a file that was long enough before tempo was applied.
+//
+// speakingRate is deliberately NOT set in speechConfig. It is not a documented field for
+// this TTS model, and an unknown field in the request tends to be either rejected or
+// silently ignored, which would make the control look like it worked when nothing moved.
+// atempo is deterministic and we can hear exactly what it did.
+// ---------------------------------------------------------------------------------------
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -42,6 +63,16 @@ const BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 // Four turns per call by default. Short enough that prosody does not drift; long enough
 // that the model still hears the two hosts answering each other rather than isolated lines.
 const CHUNK_TURNS = Number(process.env.CHUNK_TURNS || 4);
+
+// Playback speed multiplier, applied after synthesis. 1.0 leaves the model's own pace alone.
+const SPEED = Number(process.env.TTS_SPEED || 1);
+if (!Number.isFinite(SPEED) || SPEED <= 0) {
+  console.error('FAIL: TTS_SPEED must be a positive number');
+  process.exit(1);
+}
+if (SPEED > 1.25) {
+  console.warn(`warning: TTS_SPEED ${SPEED} is past the point where consonants start colliding`);
+}
 
 // The performance direction. This is a style prompt, not an instruction set: it describes
 // how the conversation should sound, where the previous version told the model how to
@@ -100,6 +131,8 @@ async function voice(turns, label) {
   return Buffer.from(part.inlineData.data, 'base64');
 }
 
+console.log(`chunk size: ${CHUNK_TURNS} turns, tempo: ${SPEED}x`);
+
 const chunks = [];
 for (let i = 0; i < sections.length; i++) {
   const n = i + 1;
@@ -157,7 +190,8 @@ const wavPath = path.join('out', `${episodeId}-voice-test.wav`);
 fs.writeFileSync(wavPath, wav(Buffer.concat(chunks)));
 
 const mp3Path = path.join('out', `${episodeId}-voice-test.mp3`);
-execFileSync('ffmpeg', ['-y', '-i', wavPath, '-codec:a', 'libmp3lame', '-qscale:a', '4', mp3Path], { stdio: 'inherit' });
+const filter = SPEED === 1 ? [] : ['-filter:a', `atempo=${SPEED}`];
+execFileSync('ffmpeg', ['-y', '-i', wavPath, ...filter, '-codec:a', 'libmp3lame', '-qscale:a', '4', mp3Path], { stdio: 'inherit' });
 fs.unlinkSync(wavPath);
 
 const seconds = Number(
