@@ -1,0 +1,43 @@
+name: Voice Audition
+
+on:
+  workflow_dispatch:
+    inputs:
+      turns:
+        description: Path to the turns file in this repo
+        required: true
+        default: scripts/internal-courtroom-01.turns.json
+      voice:
+        description: Voice name to audition (e.g. Bodi, Fenrir, Orus)
+        required: true
+        default: Bodi
+      host:
+        description: Whose lines to read (David or Jason)
+        required: true
+        default: David
+      speed:
+        description: Playback speed multiplier (1.0 = model pace, 1.1 = slightly quicker)
+        required: false
+        default: '1'
+
+jobs:
+  voice-audition:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Voice the lines
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TTS_MODEL: gemini-3.1-flash-tts-preview
+          TTS_SPEED: ${{ inputs.speed }}
+        run: node render/voice-audition.mjs "${{ inputs.turns }}" "${{ inputs.voice }}" "${{ inputs.host }}"
+      - name: Upload audition
+        uses: actions/upload-artifact@v5
+        with:
+          name: audition-${{ inputs.voice }}-${{ inputs.host }}
+          path: out/
