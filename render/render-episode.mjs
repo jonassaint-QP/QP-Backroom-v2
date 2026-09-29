@@ -14,6 +14,21 @@ const TEXT_MODEL = process.env.TEXT_MODEL || 'gemini-3.1-pro-preview';
 const VOICES = { David: 'Fenrir', Jason: 'Orus' };
 const SECTIONS = 3;
 
+// The script is written in one call PER SECTION, not one call for the whole episode.
+// A single call asked for 5,400 words returns roughly a quarter of that, every time.
+// Each call below is therefore asked for one section's worth, and the section boundary
+// is requested rather than computed. The sections must also be written in order, because
+// each call is given the tail of the one before it so a term of art defined earlier is
+// not defined again later.
+const SECTION_PLAN = [
+  'Section 1 of 3 — the cold open plus beats one and two.',
+  'Section 2 of 3 — beats three and four. This continues an episode already in progress: open by picking the conversation back up, and do not re-introduce or re-define any term of art that Section 1 already defined.',
+  'Section 3 of 3 — beats five and six plus the episode closing. The primary call to action is spoken on the final turn, once, and never mid-section. Do not re-introduce or re-define any term of art already defined earlier.',
+];
+const SECTION_WORDS =
+  'Length for this section: 1,800 to 2,150 spoken words. Count the words in the lines you produce before you return, and state that count on its own line after the array. If you cannot reach 1,800 words from the material without padding, say so in that same line instead of inflating the dialogue.';
+const TAIL_TURNS = 6; // turns carried from the end of the previous section, for continuity only
+
 const [briefPath, episodeId] = process.argv.slice(2);
 if (!briefPath || !episodeId) {
   console.error('usage: node render/render-episode.mjs <brief-path> <episode-id>');
@@ -32,55 +47,74 @@ async function call(model, body) {
   return res.json();
 }
 
-// 1. script pass: writer prompt + brief -> validated turn array
-const writer = fs.readFileSync('prompts/episode-writer.md', 'utf8');
-const brief = fs.readFileSync(briefPath, 'utf8');
-
-const scriptRes = await call(TEXT_MODEL, {
-  contents: [{ role: 'user', parts: [{ text: `${writer}\n\n---\n\nEPISODE BRIEF\n\n${brief}` }] }],
-});
-const raw = (scriptRes.candidates?.[0]?.content?.parts ?? []).map(p => p.text).join('');
-
-let turns;
-try {
-  turns = JSON.parse(raw.slice(raw.indexOf('['), raw.lastIndexOf(']') + 1));
-} catch (err) {
-  console.error('FAIL: writer output is not a parseable turn array');
-  process.exit(1);
-}
-if (!Array.isArray(turns) || turns.length === 0) {
-  console.error('FAIL: writer prompt returned no turn array');
-  process.exit(1);
-}
+const spoken = t => (typeof t.text === 'string' && t.text.trim() !== '' ? t.text : t.line);
+const words = s => s.split(/\s+/).filter(Boolean).length;
 
 // schema tolerance: the turn contract is documented with `line`, the writer may emit
 // either. Normalise once, here, so no downstream line has to care which field arrived.
-const spoken = t => (typeof t.text === 'string' && t.text.trim() !== '' ? t.text : t.line);
-
-for (const t of turns) {
-  const line = spoken(t);
-  if (typeof line !== 'string' || line.trim() === '') {
-    console.error(`FAIL: turn has no spoken line (speaker=${t.speaker ?? '?'})`);
+function parseTurns(raw, label) {
+  let out;
+  try {
+    out = JSON.parse(raw.slice(raw.indexOf('['), raw.lastIndexOf(']') + 1));
+  } catch (err) {
+    console.error(`FAIL: ${label} output is not a parseable turn array`);
     process.exit(1);
   }
-  t.text = line;
-  if (t.pause_after_ms !== undefined) {
-    console.warn(`note: pause_after_ms=${t.pause_after_ms} is realised by punctuation, not sent to the model`);
+  if (!Array.isArray(out) || out.length === 0) {
+    console.error(`FAIL: ${label} returned no turn array`);
+    process.exit(1);
   }
+  for (const t of out) {
+    const line = spoken(t);
+    if (typeof line !== 'string' || line.trim() === '') {
+      console.error(`FAIL: ${label} has a turn with no spoken line (speaker=${t.speaker ?? '?'})`);
+      process.exit(1);
+    }
+    t.text = line;
+    if (t.pause_after_ms !== undefined) {
+      console.warn(`note: pause_after_ms=${t.pause_after_ms} is realised by punctuation, not sent to the model`);
+    }
+  }
+  return out;
 }
-console.log(`script: ${turns.length} turns`);
 
-// 2. three sections, cut here. The writer emits a flat turn array with no per-turn
-// section field, so the split happens in code rather than being requested from the model.
-const size = Math.ceil(turns.length / SECTIONS);
-const parts = Array.from({ length: SECTIONS }, (_, i) => turns.slice(i * size, (i + 1) * size));
+// 1. script pass: writer prompt + brief + section plan -> one turn array per section
+const writer = fs.readFileSync('prompts/episode-writer.md', 'utf8');
+const brief = fs.readFileSync(briefPath, 'utf8');
 
-const empty = parts.findIndex(p => p.length === 0);
-if (empty !== -1) {
-  console.error(`FAIL: section ${empty + 1} is empty - writer returned too few turns`);
+const parts = [];
+for (let i = 0; i < SECTIONS; i++) {
+  const prior = parts.length
+    ? `\n\nSECTION ${i} AS ALREADY WRITTEN — the closing turns of the previous section. This is context for continuity only: do not repeat it, do not restate it, and do not summarise it before continuing.\n\n${parts
+        .at(-1)
+        .slice(-TAIL_TURNS)
+        .map(t => `${t.speaker}: ${t.text}`)
+        .join('\n')}`
+    : '';
+
+  const text = `${writer}\n\n---\n\nEPISODE BRIEF\n\n${brief}\n\n---\n\nNOW WRITE\n\n${SECTION_PLAN[i]}\n\n${SECTION_WORDS}${prior}\n\nReturn only this section's turns as a JSON array.`;
+
+  const res = await call(TEXT_MODEL, { contents: [{ role: 'user', parts: [{ text }] }] });
+  const raw = (res.candidates?.[0]?.content?.parts ?? []).map(p => p.text).join('');
+
+  const section = parseTurns(raw, `section ${i + 1}`);
+  parts.push(section);
+  console.log(`section ${i + 1}: ${section.length} turns, ${section.reduce((n, t) => n + words(t.text), 0)} words`);
+}
+
+const turns = parts.flat();
+console.log(`script: ${turns.length} turns, ${turns.reduce((n, t) => n + words(t.text), 0)} words`);
+
+// A section that renders empty is a failure, and it is cheaper to catch it here than to
+// ship ten minutes of audio and find out from a listener.
+const short = parts.findIndex(p => p.length === 0);
+if (short !== -1) {
+  console.error(`FAIL: section ${short + 1} came back empty`);
   process.exit(1);
 }
 
+// 2. audio pass, one call per section. The section boundary is now the one the script was
+// written to, rather than a computed slice of a flat array.
 const chunks = [];
 for (let i = 0; i < parts.length; i++) {
   const n = i + 1;
