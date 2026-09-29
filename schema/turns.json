@@ -56,7 +56,8 @@
   "engine": {
     "model": "gemini-3.1-flash-tts-preview, multi-speaker",
     "sectioning": "three sections — Section 1 = cold open + Beats 1–2; Section 2 = Beats 3–4; Section 3 = Beats 5–6 + closing",
-    "target": "25–30 min, 5,000–7,000 words, 130–180 turns"
+    "target": "36–40 min, 5,400–6,400 words, 145–175 turns; each section 1,800–2,150 words",
+    "target_set": "2026-09-29 — supersedes the inherited 25–30 min / 5,000–7,000 word target, which was also below the renderer's own 20-minute truncation warning"
   },
   "sources": {
     "cast": "prompts/personas.md",

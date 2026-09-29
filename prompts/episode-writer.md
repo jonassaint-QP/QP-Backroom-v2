@@ -17,6 +17,17 @@ Write a complete two-host dialogue between David and Jason that covers the episo
 David — grounded, skeptical, dry, mechanically minded. Short, punchy sentences. Weary humor. Blue-collar metaphors. He gives practical pushback and gut checks.
 Jason — precise, analytical, research-oriented. Deep, calm, measured, low-affect, procedural. He explains frameworks clearly without lecturing.
 
+## LENGTH — THIS IS A HARD REQUIREMENT
+The finished episode runs **36 to 40 minutes of spoken audio**. That is **5,400 to 6,400 words of dialogue in total**, which is roughly **145 to 175 turns**.
+
+Do not return a short script. A script below 5,400 words fails the render and the episode cannot be published. Short scripts are the single most common failure of this prompt, and they are always caused by summarising the outline rather than writing it out in full.
+
+**Distribute the length evenly.** The renderer cuts your flat array into three equal sections, so each third must stand on its own at roughly **1,800 to 2,150 words**. Do not front-load the early beats and rush the close.
+
+**Length comes from the conversation, not from padding.** Stretch by giving each beat its own exchange — a question, a pushback, a concrete example, a reframe — rather than by restating the same point in different words. If a beat feels thin, add a specific situation or a practical detail. Do not add a filler sentence.
+
+**Every beat must be covered in order, and no beat may be skipped or merged to save room.** If the outline genuinely cannot carry 5,400 words, state that in a single line after the array rather than inflating the dialogue.
+
 ## FORMAT
 Write the dialogue as a JSON array of turns, each with:
 - `speaker`: "David" or "Jason"
@@ -29,11 +40,10 @@ Write the dialogue as a JSON array of turns, each with:
 - Apply conversational texture lightly: fillers as words ("um," "uh," "like," "you know," "I mean"), stutters as repeated sounds with a dash ("I—I mean," "th-there's"). Keep tics character-specific — David's working-class rhythm ("yeah, uh," "right, so") vs Jason's calibrated register ("hm," "well... actually," "no, it doesn't"). Roughly one in every four to five turns. A filler replaces a pause.
 - This is educational storytelling, not medical advice. Soften any definitive medical claim into experience-based or metaphorical language.
 - Use the required terms of art: **Internal Courtroom, Ambiguity Tax, Double Outsider, Somatic Scaffolding, Radical Acceptance.** Their definitions live in the Glossary of Terms of Art, which is the single source for them. Do not invent a sixth term and do not treat a defined term as decorative — each one is a piece of the framework the episode is built on, and the glossary explains how they fit together.
-- **Do not use "Gear, Not Medicine" as a required phrase.** It was retired from the set on 2026-09-18. The framing it names still governs how gear and kink material are written — affirming, non-pathologising, never framed as medical treatment — but it is no longer a phrase a script must contain.
-- End by turning toward possibility and connection, with a varied reflective question — do not repeat the show's canonical closing question verbatim.
+- **Do not use "Gear, Not Medicine" as a required phrase.** It was retired from the set on 2026-09-18. The framing it names still governs how gear and kink material are written — affirming, non-pathologizing, never framed as medical treatment — but it is no longer a phrase a script must contain.
+- End by turning toward possibility and connection, with a varied reflective question — do not repeat the show's canonical closing question verbatim, and do not use it as the episode's call to action.
 
 ## EPISODE OUTLINE
-The Centaur Framework for Somatic Sovereignty
 
 ### Introduction & Core Problem
 - The "Rented F-150" analogy: treating the physical body merely as a utility vehicle to haul the brain around.
