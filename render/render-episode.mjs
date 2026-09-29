@@ -1,4 +1,28 @@
 // QP podcast renderer. Brief in, MP3 out. See acceptance criteria, criteria 1-9.
+//
+// ---------------------------------------------------------------------------------------
+// VOICE PATH ALIGNMENT (added 2026-09-29)
+//
+// The audition script (render/voice-audition.mjs) is what produced delivery Joshua approved.
+// This file previously rendered audio under three conditions the audition does NOT use, and
+// all three are why the episode voices sounded robotic while the same voice sounded good in
+// isolation:
+//
+//   1. ONE CALL PER SECTION. Up to fifteen turns, four hundred words, single generation. The
+//      model drifts into narrator register partway through a long generation. Now chunked
+//      (CHUNK_TURNS), same as the audition.
+//   2. MECHANICAL INSTRUCTION. "TTS the following two-host conversation exactly as written.
+//      Treat every dash as a cut-in..." is an instruction set about punctuation. Mechanical
+//      instruction produces mechanical delivery. Now a performance direction.
+//   3. PROSE PUNCTUATION SENT VERBATIM. Colons, semicolons and dashes are obeyed literally by
+//      the model - a colon says "land on this", a semicolon says "hold" - which produces the
+//      held-syllable, leaned-on-word effect. normalizeForSpeech() flattens those cues for the
+//      synthesiser only. The turns file written to out/ keeps the original punctuation.
+//
+// If the episode voices are STILL flat after this, the next lever is single-speaker mode:
+// voice each host's turns separately and interleave, which is exactly what AI Studio does.
+// Deliberately not done here until short chunks have been ruled out in the full render.
+// ---------------------------------------------------------------------------------------
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -11,8 +35,33 @@ if (!KEY) {
 
 const TTS_MODEL = process.env.TTS_MODEL || 'gemini-3.1-flash-tts-preview';
 const TEXT_MODEL = process.env.TEXT_MODEL || 'gemini-3.1-pro-preview';
-const VOICES = { David: 'Fenrir', Jason: 'Orus' };
+
+// Bodi is the approved voice. Overridable per host so a recast is a workflow field rather
+// than a code change - the point of the audition was to make this a one-line decision.
+const VOICES = {
+  David: process.env.VOICE_DAVID || 'Bodi',
+  Jason: process.env.VOICE_JASON || 'Orus',
+};
+
 const SECTIONS = 3;
+
+// Turns per TTS call. Short enough that prosody does not drift mid-generation; long enough
+// that the model still hears the two hosts answering each other.
+const CHUNK_TURNS = Number(process.env.CHUNK_TURNS || 4);
+
+// Playback speed, applied after synthesis via ffmpeg atempo. Duration changes, pitch does not.
+const SPEED = Number(process.env.TTS_SPEED || 1);
+if (!Number.isFinite(SPEED) || SPEED <= 0) {
+  console.error('FAIL: TTS_SPEED must be a positive number');
+  process.exit(1);
+}
+
+// Relaxed, slightly under-enunciated speech. Most of this describes what to do rather than
+// what not to do, because an unhedged negative instruction reads as a nudge toward the very
+// thing being forbidden.
+const STYLE =
+  process.env.TTS_STYLE ||
+  'You are two people talking, not narrators reading. Speak the way someone talks when they are relaxed and mid-thought - words run together a little, some syllables get swallowed, sentences end on a downward shrug rather than a landing. Keep the pace conversational and slightly quick. Do not articulate each word separately. Do not lean on syllables or stretch the ends of words for emphasis. Do not slow down to be understood.';
 
 // The script is written in one call PER SECTION, not one call for the whole episode.
 // A single call asked for 5,400 words returns roughly a quarter of that, every time.
@@ -49,6 +98,22 @@ async function call(model, body) {
 
 const spoken = t => (typeof t.text === 'string' && t.text.trim() !== '' ? t.text : t.line);
 const words = s => s.split(/\s+/).filter(Boolean).length;
+
+// Prose punctuation rewritten into speech punctuation, for the synthesiser only. The model
+// follows these marks literally and the list-shaped ones are what produce the held-syllable
+// delivery. The turns written to out/ keep the original text.
+function normalizeForSpeech(text) {
+  return text
+    .replace(/\s*[\u2014\u2013]\s*/g, ', ') // em / en dash -> comma
+    .replace(/\s*;\s*/g, '. ') // semicolon -> full stop
+    .replace(/\s*:\s*/g, ', ') // colon -> comma, removes the "land on this" cue
+    .replace(/\s*[\u201C\u201D\u2018\u2019"]/g, '') // quote marks drop out
+    .replace(/\s*[()]/g, ' ') // parentheses drop out
+    .replace(/\*+/g, '') // stray markdown emphasis must never be read aloud
+    .replace(/\.{2,}/g, '. ') // ellipses collapse, trailing-off is a style matter
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
 
 // schema tolerance: the turn contract is documented with `line`, the writer may emit
 // either. Normalise once, here, so no downstream line has to care which field arrived.
@@ -113,15 +178,16 @@ if (short !== -1) {
   process.exit(1);
 }
 
-// 2. audio pass, one call per section. The section boundary is now the one the script was
-// written to, rather than a computed slice of a flat array.
-const chunks = [];
-for (let i = 0; i < parts.length; i++) {
-  const n = i + 1;
-  const lines = parts[i].map(t => `${t.speaker}: ${spoken(t)}`).join('\n');
+async function voice(turnsChunk, label) {
+  const lines = turnsChunk
+    .map(t => `${t.speaker}: ${normalizeForSpeech(spoken(t))}`)
+    .join('\n');
 
   const audioRes = await call(TTS_MODEL, {
-    contents: [{ role: 'user', parts: [{ text: 'TTS the following two-host conversation exactly as written. Treat every dash as a cut-in and every ellipsis as trailing off.\n\n' + lines }] }],
+    // The style is prepended per call, not once per file: each call is generated
+    // independently, so a chunk that does not carry the direction gets the model's default
+    // register back.
+    contents: [{ role: 'user', parts: [{ text: `${STYLE}\n\n${lines}` }] }],
     generationConfig: {
       responseModalities: ['AUDIO'],
       speechConfig: {
@@ -137,11 +203,31 @@ for (let i = 0; i < parts.length; i++) {
 
   const part = audioRes.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
   if (!part) {
-    console.error(`FAIL: section ${n} returned no audio`);
+    console.error(`FAIL: ${label} returned no audio`);
     process.exit(1);
   }
-  chunks.push(Buffer.from(part.inlineData.data, 'base64'));
-  console.log(`section ${n}: ${chunks.at(-1).length} bytes PCM`);
+  return Buffer.from(part.inlineData.data, 'base64');
+}
+
+// 2. audio pass, chunked within each section. The section boundary is still the one the
+// script was written to, so the join points land where the writing already breaks.
+console.log(`chunk size: ${CHUNK_TURNS} turns, tempo: ${SPEED}x, voices: ${JSON.stringify(VOICES)}`);
+
+const chunks = [];
+for (let i = 0; i < parts.length; i++) {
+  const n = i + 1;
+  const section = parts[i];
+
+  const pieces = [];
+  for (let s = 0; s < section.length; s += CHUNK_TURNS) {
+    const slice = section.slice(s, s + CHUNK_TURNS);
+    const label = `section ${n} chunk ${pieces.length + 1}`;
+    const pcm = await voice(slice, label);
+    pieces.push(pcm);
+  }
+
+  chunks.push(Buffer.concat(pieces));
+  console.log(`section ${n}: ${parts[n - 1].length} turns, ${chunks.at(-1).length} bytes PCM`);
 }
 
 // 3. raw PCM (24kHz / 16-bit / mono) -> WAV -> MP3
@@ -172,7 +258,8 @@ const wavPath = path.join('out', `${episodeId}.wav`);
 fs.writeFileSync(wavPath, wav(Buffer.concat(chunks)));
 
 const mp3Path = path.join('out', `${episodeId}.mp3`);
-execFileSync('ffmpeg', ['-y', '-i', wavPath, '-codec:a', 'libmp3lame', '-qscale:a', '4', mp3Path], { stdio: 'inherit' });
+const filter = SPEED === 1 ? [] : ['-filter:a', `atempo=${SPEED}`];
+execFileSync('ffmpeg', ['-y', '-i', wavPath, ...filter, '-codec:a', 'libmp3lame', '-qscale:a', '4', mp3Path], { stdio: 'inherit' });
 fs.unlinkSync(wavPath);
 
 const seconds = Number(
