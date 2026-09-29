@@ -19,6 +19,10 @@ on:
         description: Playback speed multiplier (1.0 = model pace, 1.1 = slightly quicker)
         required: false
         default: '1'
+      style:
+        description: Style prompt. Leave blank for the built-in one - fill it in to A/B a change.
+        required: false
+        default: ''
 
 jobs:
   voice-audition:
@@ -35,6 +39,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           TTS_MODEL: gemini-3.1-flash-tts-preview
           TTS_SPEED: ${{ inputs.speed }}
+          TTS_STYLE: ${{ inputs.style }}
         run: node render/voice-audition.mjs "${{ inputs.turns }}" "${{ inputs.voice }}" "${{ inputs.host }}"
       - name: Upload audition
         uses: actions/upload-artifact@v5
