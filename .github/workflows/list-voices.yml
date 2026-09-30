@@ -1,0 +1,23 @@
+name: List Voices
+
+on:
+  workflow_dispatch:
+    inputs:
+      look_for:
+        description: Name to check for in the catalogue (e.g. Bodi)
+        required: false
+        default: Bodi
+
+jobs:
+  list-voices:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: List voices
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          LOOK_FOR_VOICE: ${{ inputs.look_for }}
+        run: node render/list-voices.mjs
