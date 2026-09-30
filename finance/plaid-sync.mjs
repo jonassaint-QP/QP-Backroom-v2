@@ -8,9 +8,8 @@
 //
 //   1. The four items on the Plaid dashboard - select products, choose plan, verify business,
 //      submit request - are not complete, so the account is in SANDBOX. Every institution
-//      linked in sandbox returns test data. Real TransPecos and Found feeds are not reachable
-//      yet, and two of those four items are business verification and billing rather than
-//      engineering.
+//      linked in sandbox returns test data. Real feeds are not reachable for Lane 2 yet, and two
+//      of those four items are business verification and billing rather than engineering.
 //   2. Plaid is not a tool this seat can call. There is no Plaid connector on the platform, so
 //      nothing here can be driven from chat. This script is the plumbing instead: it runs in
 //      the repo, against credentials held as write-only secrets.
@@ -21,15 +20,35 @@
 // ---------------------------------------------------------------------------------------
 //
 // ---------------------------------------------------------------------------------------
+// LANE 1 IS CLOSED (added 2026-09-30, later the same day)
+//
+// The TransPecos settlement account behind Lane 1 CLOSED on 2026-09-30 because no funds had
+// transferred in ninety days. It was closed for inactivity, not for cause: the storefront is
+// suspended by founder decision, so there was nothing to settle.
+//
+// Which means Lane 1 has no bank to link. A Plaid Item pointed at a closed account does not
+// fail loudly - it either errors on link or, worse, links and returns an empty statement that
+// looks like a quiet month. Both outcomes invite a reconciliation against nothing.
+//
+// So Lane 1 is disabled by default rather than removed. Removal would lose the shape, and the
+// lane returns if a replacement account is opened. Set LANE1_ENABLED=1 to bring it back.
+// ---------------------------------------------------------------------------------------
+//
+// ---------------------------------------------------------------------------------------
 // THE FIREWALL APPLIES TO THE CONNECTIONS, NOT JUST THE OUTPUT (added 2026-09-30)
 //
-// Two lanes means two Plaid Items - one for TransPecos, one for Found - and never a single Item
-// covering both banks. A connection spanning both banks nets the lanes one layer below any
-// report, and a rule enforced only at the reporting layer is not enforced at all.
+// Two lanes means two Plaid Items - one per bank - and never a single Item covering both banks.
+// A connection spanning both banks nets the lanes one layer below any report, and a rule
+// enforced only at the reporting layer is not enforced at all.
 //
 // So every output in this script is per-lane and there is no code path that totals them. The
-// summary at the end prints two counts and no combined figure, deliberately. A blended number
-// is the financial expression of a crossed lane.
+// summary at the end prints one line per active lane and no combined figure, deliberately. A
+// blended number is the financial expression of a crossed lane.
+//
+// Note this rule does NOT become optional now that Lane 1 is closed. The live pressure in that
+// direction runs the other way: the standing temptation is to route a commercial charge through
+// the clinical processor "just this once", and that is precisely the exposure the firewall
+// exists to prevent.
 // ---------------------------------------------------------------------------------------
 //
 // ---------------------------------------------------------------------------------------
@@ -92,16 +111,25 @@ const HOST = ENV === 'production' ? 'https://production.plaid.com' : 'https://sa
 
 // The two lanes. Institution ids are sandbox test institutions; in production these are unused
 // because the access token already names the item.
+//
+// `enabled` is read from the environment so a lane's status lives with the lane's configuration
+// rather than being commented out and forgotten. Lane 1 defaults OFF: its bank closed on
+// 2026-09-30 and there is nothing to link until a replacement is opened.
 const LANES = [
   {
     key: 'lane1-transpecos',
     label: 'Lane 1 - retail storefront (KURV/PaymentCloud -> TransPecos)',
+    enabled: process.env.LANE1_ENABLED === '1',
+    closedNote:
+      'TransPecos account closed 2026-09-30 for inactivity (90 days, no funds transferred).',
     sandboxInstitution: process.env.PLAID_LANE1_INSTITUTION || 'ins_109508',
     tokenEnv: 'PLAID_ACCESS_TOKEN_LANE1',
   },
   {
     key: 'lane2-found',
     label: 'Lane 2 - clinical services (Cardpointe/First Data -> Found Bank)',
+    enabled: process.env.LANE2_ENABLED !== '0',
+    closedNote: null,
     sandboxInstitution: process.env.PLAID_LANE2_INSTITUTION || 'ins_109509',
     tokenEnv: 'PLAID_ACCESS_TOKEN_LANE2',
   },
@@ -164,11 +192,19 @@ function csv(rows, columns) {
 fs.mkdirSync(path.join('out', 'plaid'), { recursive: true });
 
 console.log(`plaid: ${HOST}`);
-console.log(`${LANES.length} lanes, each one its own Item. Outputs are never combined.\n`);
+console.log(`${LANES.length} lanes declared, each one its own Item. Outputs are never combined.\n`);
 
 const summary = [];
 
 for (const lane of LANES) {
+  if (!lane.enabled) {
+    console.log(`${lane.key} - SKIPPED`);
+    if (lane.closedNote) console.log(`  ${lane.closedNote}`);
+    console.log('  no statement is pulled, so nothing can be reconciled against nothing.\n');
+    summary.push({ key: lane.key, skipped: true });
+    continue;
+  }
+
   console.log(`${lane.key} - ${lane.label}`);
 
   const accessToken = await accessTokenFor(lane);
@@ -213,7 +249,9 @@ for (const lane of LANES) {
   summary.push({ key: lane.key, accounts: accountRows.length, transactions: txRows.length });
 }
 
-// Two lines, two counts, no total. See the firewall note at the top of this file.
+// One line per lane, no total. See the firewall note at the top of this file.
 console.log('summary (per lane, never combined):');
-for (const s of summary) console.log(`  ${s.key}: ${s.accounts} accounts, ${s.transactions} transactions`);
+for (const s of summary) {
+  console.log(s.skipped ? `  ${s.key}: skipped (no bank to link)` : `  ${s.key}: ${s.accounts} accounts, ${s.transactions} transactions`);
+}
 console.log('\nNo blended figure is produced anywhere in this script, by design.');

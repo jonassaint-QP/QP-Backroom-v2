@@ -1,8 +1,12 @@
 name: Plaid Sync
 
-# Reads bank data for both lanes. Read-only: this script has no code path that moves money.
-# Sandbox until the four dashboard items are complete; production is gated behind an explicit
-# ALLOW_PRODUCTION=1 and per-lane access-token secrets.
+# Reads bank data per lane. Read-only: this script has no code path that moves money.
+#
+# Lane 1 defaults OFF - its TransPecos settlement account closed 2026-09-30 for inactivity and
+# there is no bank to link until a replacement is opened. Lane 2 (Found, clinical) is live.
+#
+# Sandbox until the four dashboard items are complete; production is additionally gated behind
+# an explicit ALLOW_PRODUCTION=1 and per-lane access-token secrets.
 
 on:
   workflow_dispatch:
@@ -11,6 +15,10 @@ on:
         description: sandbox or production. Production additionally requires ALLOW_PRODUCTION.
         required: true
         default: sandbox
+      lane1_enabled:
+        description: Set to 1 only once Lane 1 has a funded replacement account to link.
+        required: false
+        default: '0'
 
 jobs:
   plaid-sync:
@@ -20,7 +28,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
-      - name: Sync both lanes
+      - name: Sync lanes
         env:
           # Write-only secrets. Never set these as plain workflow values.
           PLAID_CLIENT_ID: ${{ secrets.PLAID_CLIENT_ID }}
@@ -29,6 +37,7 @@ jobs:
           PLAID_ACCESS_TOKEN_LANE1: ${{ secrets.PLAID_ACCESS_TOKEN_LANE1 }}
           PLAID_ACCESS_TOKEN_LANE2: ${{ secrets.PLAID_ACCESS_TOKEN_LANE2 }}
           PLAID_ENV: ${{ inputs.plaid_env }}
+          LANE1_ENABLED: ${{ inputs.lane1_enabled }}
           ALLOW_PRODUCTION: '0'
         run: node finance/plaid-sync.mjs
       - name: Upload statements
