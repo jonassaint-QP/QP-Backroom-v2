@@ -2,11 +2,16 @@ name: Plaid Sync
 
 # Reads bank data per lane. Read-only: this script has no code path that moves money.
 #
-# Lane 1 defaults OFF - its TransPecos settlement account closed 2026-09-30 for inactivity and
-# there is no bank to link until a replacement is opened. Lane 2 (Found, clinical) is live.
+# BOTH LANES SETTLE AT FOUND, and Found holds two accounts. That means Link must be run TWICE,
+# selecting a different account each time, and the two access tokens are kept in two separate
+# secrets. A single Item that can see both accounts is a lane crossing at the connection layer
+# and the script will refuse to run if it detects one.
+#
+# Lane 1 (commercial) defaults OFF - the former TransPecos settlement account closed 2026-09-30
+# and no replacement account id has been recorded yet. Lane 2 (clinical) is live.
 #
 # Sandbox until the four dashboard items are complete; production is additionally gated behind
-# an explicit ALLOW_PRODUCTION=1 and per-lane access-token secrets.
+# an explicit ALLOW_PRODUCTION=1 and per-account access-token secrets.
 
 on:
   workflow_dispatch:
@@ -16,7 +21,7 @@ on:
         required: true
         default: sandbox
       lane1_enabled:
-        description: Set to 1 only once Lane 1 has a funded replacement account to link.
+        description: Set to 1 once the Lane 1 commercial account id is recorded and linked.
         required: false
         default: '0'
 
@@ -33,9 +38,13 @@ jobs:
           # Write-only secrets. Never set these as plain workflow values.
           PLAID_CLIENT_ID: ${{ secrets.PLAID_CLIENT_ID }}
           PLAID_SECRET: ${{ secrets.PLAID_SECRET }}
-          # Present only once Link has been run per bank in production.
+          # One token per ACCOUNT. Both lanes are at Found, so these two Items are separate
+          # authorisations of the same institution, each scoped to a single account.
           PLAID_ACCESS_TOKEN_LANE1: ${{ secrets.PLAID_ACCESS_TOKEN_LANE1 }}
           PLAID_ACCESS_TOKEN_LANE2: ${{ secrets.PLAID_ACCESS_TOKEN_LANE2 }}
+          # Optional account ids, used to catch an Item that spans both lanes.
+          PLAID_ACCOUNT_LANE1: ${{ secrets.PLAID_ACCOUNT_LANE1 }}
+          PLAID_ACCOUNT_LANE2: ${{ secrets.PLAID_ACCOUNT_LANE2 }}
           PLAID_ENV: ${{ inputs.plaid_env }}
           LANE1_ENABLED: ${{ inputs.lane1_enabled }}
           ALLOW_PRODUCTION: '0'

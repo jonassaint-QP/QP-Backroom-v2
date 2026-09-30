@@ -8,55 +8,73 @@
 //
 //   1. The four items on the Plaid dashboard - select products, choose plan, verify business,
 //      submit request - are not complete, so the account is in SANDBOX. Every institution
-//      linked in sandbox returns test data. Real feeds are not reachable for Lane 2 yet, and two
-//      of those four items are business verification and billing rather than engineering.
+//      linked in sandbox returns test data. Real feeds are not reachable yet, and two of those
+//      four items are business verification and billing rather than engineering.
 //   2. Plaid is not a tool this seat can call. There is no Plaid connector on the platform, so
 //      nothing here can be driven from chat. This script is the plumbing instead: it runs in
 //      the repo, against credentials held as write-only secrets.
-//
-// Sandbox is still the right place to build. Linking against fake institutions now means
-// production is a credential swap rather than a first attempt, and nobody debugs against real
-// money.
 // ---------------------------------------------------------------------------------------
 //
 // ---------------------------------------------------------------------------------------
-// LANE 1 IS CLOSED (added 2026-09-30, later the same day)
+// BOTH LANES SETTLE AT FOUND, AND FOUND HOLDS TWO ACCOUNTS (corrected 2026-09-30)
 //
-// The TransPecos settlement account behind Lane 1 CLOSED on 2026-09-30 because no funds had
-// transferred in ninety days. It was closed for inactivity, not for cause: the storefront is
-// suspended by founder decision, so there was nothing to settle.
+// Earlier the same day this file assumed Lane 1 settled at TransPecos. That was the retail
+// settlement account, and it CLOSED on 2026-09-30 after ninety days with no transfer - closed
+// for inactivity, not for cause, because the storefront is suspended and the retail lane has
+// never traded.
 //
-// Which means Lane 1 has no bank to link. A Plaid Item pointed at a closed account does not
-// fail loudly - it either errors on link or, worse, links and returns an empty statement that
-// looks like a quiet month. Both outcomes invite a reconciliation against nothing.
+// Founder direction: the seat is linked to the FOUND bank, which holds TWO accounts, and then
+// to the KURV processor. So the destination for both lanes is Found.
 //
-// So Lane 1 is disabled by default rather than removed. Removal would lose the shape, and the
-// lane returns if a replacement account is opened. Set LANE1_ENABLED=1 to bring it back.
+// THIS IS THE DANGEROUS CASE, AND IT IS WHY THIS FILE IS STRUCTURED THE WAY IT IS. Two lanes
+// whose money lands at ONE institution is exactly the situation where a single connection sweeps
+// both. A Plaid Item at Found can expose every account the credentials can see, which would put
+// the clinical sub-account and the commercial account in one feed - a lane crossing at the
+// connection layer, one layer below any report, where no reconciliation would ever reveal it.
+//
+// So: Link must be run TWICE against Found, selecting a different account each time, and the two
+// resulting access tokens are kept in two separate secrets. Two Items, two tokens, two files.
+// Never one Item covering both accounts. If a single Item is ever created that can see both,
+// that Item is the incident, not the configuration.
+// ---------------------------------------------------------------------------------------
+//
+// ---------------------------------------------------------------------------------------
+// BUT PLAID CANNOT READ THE PROCESSOR (added 2026-09-30)
+//
+// KURV is a payment processor, not a bank. Plaid reads bank accounts through bank credentials
+// and has no route into a merchant processor. So the processor side of this seat's work does
+// not come from this script at all.
+//
+// Processor data arrives as settlement reports - the PaymentCloud/KURV notices already landing
+// in the mailbox, referencing the merchant MID - and those are read as documents. Plaid gives
+// the bank truth; the settlement report gives the processor truth; reconciliation is the diff
+// between them. Neither source can substitute for the other, and a reconciliation that checks
+// one against itself is a formatting exercise.
+//
+// TWO MIDs APPEAR IN THE RECORD, FROM TWO DIFFERENT MERCHANT ACCOUNTS. The clinical account was
+// opened in error and closed; the e-commerce merchant is the live one. Before any processor
+// figure is reconciled, confirm which MID belongs to the live merchant - reconciling against a
+// closed account's reports is silent and produces a clean-looking figure that means nothing.
 // ---------------------------------------------------------------------------------------
 //
 // ---------------------------------------------------------------------------------------
 // THE FIREWALL APPLIES TO THE CONNECTIONS, NOT JUST THE OUTPUT (added 2026-09-30)
 //
-// Two lanes means two Plaid Items - one per bank - and never a single Item covering both banks.
-// A connection spanning both banks nets the lanes one layer below any report, and a rule
-// enforced only at the reporting layer is not enforced at all.
-//
-// So every output in this script is per-lane and there is no code path that totals them. The
+// Every output in this script is per-lane and there is no code path that totals them. The
 // summary at the end prints one line per active lane and no combined figure, deliberately. A
 // blended number is the financial expression of a crossed lane.
 //
-// Note this rule does NOT become optional now that Lane 1 is closed. The live pressure in that
-// direction runs the other way: the standing temptation is to route a commercial charge through
-// the clinical processor "just this once", and that is precisely the exposure the firewall
-// exists to prevent.
+// Note this rule does NOT become optional now that the retail lane is quiet. The live pressure
+// runs the other way: the standing temptation is to route a commercial charge through the
+// clinical processor "just this once", and that is precisely the exposure the firewall prevents.
 // ---------------------------------------------------------------------------------------
 //
 // ---------------------------------------------------------------------------------------
 // THE ACCESS TOKEN IS THE SECRET, AND IT IS NOT THE ONLY ONE (added 2026-09-30)
 //
 // Plaid's client ID is not sensitive. The SECRET and every ACCESS TOKEN are. An access token is
-// a standing read of a bank account with no expiry and no second factor, which makes it the
-// most dangerous value in this workspace.
+// a standing read of a bank account with no expiry and no second factor, which makes it the most
+// dangerous value in this workspace.
 //
 // Rules, and they are not stylistic:
 //   - secrets come from the environment only, never a literal in this file
@@ -67,19 +85,6 @@
 //
 // Note what does NOT pass through this estate: bank usernames and passwords. That is the point
 // of Link - credentials go to Plaid directly and are never seen, stored or proxied here.
-// ---------------------------------------------------------------------------------------
-//
-// ---------------------------------------------------------------------------------------
-// WHY LINK ITSELF IS NOT IN THIS FILE (added 2026-09-30)
-//
-// Plaid Link is a browser flow - a human opens it, picks their institution, authenticates. It
-// cannot run inside a GitHub Action, so the production path is: run Link once per bank, take
-// the resulting access token, and store it as a secret.
-//
-// Sandbox has a shortcut that exercises the same exchange and sync path without a browser:
-// /sandbox/public_token/create mints a public token for a test institution headlessly. So this
-// script runs end to end in CI today, and the only thing that changes in production is where
-// the access token comes from.
 // ---------------------------------------------------------------------------------------
 import fs from 'node:fs';
 import path from 'node:path';
@@ -98,40 +103,37 @@ if (!['sandbox', 'production'].includes(ENV)) {
   process.exit(1);
 }
 
-// The seat cannot move money and neither can this script. It reads. Refusing to run against
-// real balances by accident is the whole reason this guard exists.
+// The seat cannot move money and neither can this script. It reads.
 if (ENV === 'production' && process.env.ALLOW_PRODUCTION !== '1') {
   console.error('FAIL: production is not enabled. Set ALLOW_PRODUCTION=1 only once the four');
-  console.error('dashboard items are complete, Link has been run per bank, and the tokens are');
+  console.error('dashboard items are complete, Link has been run per account, and the tokens are');
   console.error('stored as secrets. Until then, sandbox answers the same engineering questions.');
   process.exit(1);
 }
 
 const HOST = ENV === 'production' ? 'https://production.plaid.com' : 'https://sandbox.plaid.com';
 
-// The two lanes. Institution ids are sandbox test institutions; in production these are unused
-// because the access token already names the item.
-//
-// `enabled` is read from the environment so a lane's status lives with the lane's configuration
-// rather than being commented out and forgotten. Lane 1 defaults OFF: its bank closed on
-// 2026-09-30 and there is nothing to link until a replacement is opened.
+// One entry per ACCOUNT, not per institution, and that distinction is the whole firewall here.
+// Both lanes are at Found, so two entries share an institution and differ only in which account
+// their token was authorised for. Each has its own token secret and its own output files.
 const LANES = [
   {
-    key: 'lane1-transpecos',
-    label: 'Lane 1 - retail storefront (KURV/PaymentCloud -> TransPecos)',
+    key: 'lane1-commercial',
+    label: 'Lane 1 - retail storefront (KURV/PaymentCloud -> Found, commercial account)',
     enabled: process.env.LANE1_ENABLED === '1',
-    closedNote:
-      'TransPecos account closed 2026-09-30 for inactivity (90 days, no funds transferred).',
+    note: 'Found commercial account. The former TransPecos settlement account closed 2026-09-30.',
     sandboxInstitution: process.env.PLAID_LANE1_INSTITUTION || 'ins_109508',
     tokenEnv: 'PLAID_ACCESS_TOKEN_LANE1',
+    accountEnv: 'PLAID_ACCOUNT_LANE1',
   },
   {
-    key: 'lane2-found',
-    label: 'Lane 2 - clinical services (Cardpointe/First Data -> Found Bank)',
+    key: 'lane2-clinical',
+    label: 'Lane 2 - clinical services (Cardpointe/First Data -> Found, clinical sub-account)',
     enabled: process.env.LANE2_ENABLED !== '0',
-    closedNote: null,
+    note: null,
     sandboxInstitution: process.env.PLAID_LANE2_INSTITUTION || 'ins_109509',
     tokenEnv: 'PLAID_ACCESS_TOKEN_LANE2',
+    accountEnv: 'PLAID_ACCOUNT_LANE2',
   },
 ];
 
@@ -167,8 +169,9 @@ async function accessTokenFor(lane) {
   }
 
   if (ENV === 'production') {
-    console.error(`FAIL: ${lane.key} has no ${lane.tokenEnv}. Run Link once for this bank and`);
-    console.error('store the resulting access token as that secret before running production.');
+    console.error(`FAIL: ${lane.key} has no ${lane.tokenEnv}. Run Link once for THIS ACCOUNT`);
+    console.error('and store the resulting access token as that secret. Both lanes are at Found, so');
+    console.error('Link runs twice and selects a different account each time.');
     process.exit(1);
   }
 
@@ -192,14 +195,14 @@ function csv(rows, columns) {
 fs.mkdirSync(path.join('out', 'plaid'), { recursive: true });
 
 console.log(`plaid: ${HOST}`);
-console.log(`${LANES.length} lanes declared, each one its own Item. Outputs are never combined.\n`);
+console.log(`${LANES.length} lanes, one ACCOUNT each. Outputs are never combined.\n`);
 
 const summary = [];
 
 for (const lane of LANES) {
   if (!lane.enabled) {
     console.log(`${lane.key} - SKIPPED`);
-    if (lane.closedNote) console.log(`  ${lane.closedNote}`);
+    if (lane.note) console.log(`  ${lane.note}`);
     console.log('  no statement is pulled, so nothing can be reconciled against nothing.\n');
     summary.push({ key: lane.key, skipped: true });
     continue;
@@ -208,12 +211,24 @@ for (const lane of LANES) {
   console.log(`${lane.key} - ${lane.label}`);
 
   const accessToken = await accessTokenFor(lane);
-
   const { accounts } = await post('/accounts/get', { access_token: accessToken });
 
-  // transactions/sync without a cursor returns the full history. A cursor belongs in durable
-  // storage, and a CI runner is ephemeral, so this run is a full pull by design - fine for a
-  // statement-sized read and deliberately not pretending to be incremental.
+  // Guard against the crossing this whole file exists to prevent. If the token's item can see
+  // accounts that belong to the OTHER lane, the firewall is broken at the source and the run
+  // stops rather than producing a clean-looking but crossed statement.
+  const expected = process.env[lane.accountEnv];
+  if (expected && !accounts.some(a => a.account_id === expected)) {
+    console.warn(`  WARNING: ${lane.tokenEnv} cannot see the expected account ${expected}.`);
+    console.warn('  Check which account Link authorised before using this output.\n');
+  }
+
+  const visibleOther = lane.key === 'lane1-commercial' ? process.env.PLAID_ACCOUNT_LANE2 : process.env.PLAID_ACCOUNT_LANE1;
+  if (visibleOther && accounts.some(a => a.account_id === visibleOther)) {
+    console.error(`FAIL: ${lane.tokenEnv} can see the other lane's account ${visibleOther}.`);
+    console.error('This Item spans both lanes. Revoke it and re-run Link for one account only.');
+    process.exit(1);
+  }
+
   const sync = await post('/transactions/sync', { access_token: accessToken });
   const transactions = sync.added ?? [];
 
@@ -252,6 +267,7 @@ for (const lane of LANES) {
 // One line per lane, no total. See the firewall note at the top of this file.
 console.log('summary (per lane, never combined):');
 for (const s of summary) {
-  console.log(s.skipped ? `  ${s.key}: skipped (no bank to link)` : `  ${s.key}: ${s.accounts} accounts, ${s.transactions} transactions`);
+  console.log(s.skipped ? `  ${s.key}: skipped (no account linked)` : `  ${s.key}: ${s.accounts} accounts, ${s.transactions} transactions`);
 }
 console.log('\nNo blended figure is produced anywhere in this script, by design.');
+console.log('Processor side (KURV/PaymentCloud) does not come from Plaid - read the settlement reports.');
