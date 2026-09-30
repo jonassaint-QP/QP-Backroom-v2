@@ -1,0 +1,52 @@
+name: Render Book Chapter
+
+on:
+  workflow_dispatch:
+    inputs:
+      chapter:
+        description: Path to the chapter text file in this repo
+        required: true
+        default: book/chapter-01.txt
+      chapter_id:
+        description: Chapter slug used for output filenames
+        required: true
+        default: chapter-01
+      voice:
+        description: Narrator voice name
+        required: false
+        default: Bodi
+      speed:
+        description: Playback speed multiplier. 1 is natural pace for an audiobook.
+        required: false
+        default: '1'
+      style:
+        description: Style prompt. Leave blank for the built-in one - fill it in to A/B a change.
+        required: false
+        default: ''
+
+jobs:
+  render-book:
+    runs-on: ubuntu-latest
+    # A thirteen-chapter book is a long unattended run. The ceiling here is a safety net so a
+    # hung call cannot burn the runner for hours; raise it when the full manuscript is built.
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Render chapter
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TTS_MODEL: gemini-3.1-flash-tts-preview
+          BOOK_VOICE: ${{ inputs.voice }}
+          TTS_SPEED: ${{ inputs.speed }}
+          TTS_STYLE: ${{ inputs.style }}
+        run: node render/render-book.mjs "${{ inputs.chapter }}" "${{ inputs.chapter_id }}"
+      - name: Upload chapter
+        uses: actions/upload-artifact@v5
+        with:
+          name: book-${{ inputs.chapter_id }}
+          path: out/

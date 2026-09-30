@@ -1,0 +1,10 @@
+// Pronunciation overrides for the audiobook path.
+//
+// Written spelling on the left, how it should actually sound on the right. Applied to the
+// spoken text only - never to the manuscript, never to an episode transcript.
+//
+// This file is read by render/render-book.mjs. An entry belongs here when a rendered chapter
+// gets a word wrong: add the pair, rerun, and the fix applies to every chapter from then on.
+// It is deliberately empty until a real render tells us what the model actually mispronounces,
+// because guessing at pronunciation problems produces a list nobody maintains.
+{}
