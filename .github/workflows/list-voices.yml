@@ -7,6 +7,10 @@ on:
         description: Name to check for in the catalogue (e.g. Bodi)
         required: false
         default: Bodi
+      dump_raw:
+        description: Set to 1 to print raw voice objects - use when the field probe finds nothing
+        required: false
+        default: '0'
 
 jobs:
   list-voices:
@@ -20,4 +24,5 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           LOOK_FOR_VOICE: ${{ inputs.look_for }}
+          DUMP_RAW: ${{ inputs.dump_raw }}
         run: node render/list-voices.mjs

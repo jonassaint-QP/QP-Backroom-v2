@@ -7,17 +7,23 @@
 //
 //   400 INVALID_ARGUMENT - "No matching speaker voice found for name: Bodi and language: "
 //
-// Bodi appears in AI Studio's voice picker. It is a display name for an audition slot, not
-// necessarily a name the generateContent endpoint accepts, and in this case it is not one.
-// Meanwhile Fenrir and Orus - the two voices the FIRST successful voice test used - are both in
-// the documented prebuilt list. That is the tell: the file that rendered used API-valid names,
-// and the one that failed used a name that only exists in the Studio UI.
+// So we stop guessing and ask the API. See the note on FIELD NAMES below for why the first
+// version of this script could not answer the question it was written to answer.
+// ---------------------------------------------------------------------------------------
 //
-// Guessing at valid names is worse than asking. This script asks. Run it once, take the list,
-// and cast from that list from then on.
+// ---------------------------------------------------------------------------------------
+// FIELD NAMES (fixed 2026-09-30)
 //
-// Prebuilt voices cannot be fetched individually (GetVoice does not serve them) - they are only
-// available by listing, which is what this does.
+// The first version read `v.name` for every entry and printed 200 rows of "(no name)". That is
+// not a fact about the catalogue - it is a fact about this script. The voice objects returned
+// here do not carry their identifier under `name`, so the Bodi check at the end compared
+// against undefined two hundred times and reported NOT FOUND. Inconclusive, not a finding.
+//
+// So: probe every plausible field, print which one hit, and dump raw JSON for the first few
+// entries when asked. A lister that cannot name a single voice has to show its work.
+//
+// Set DUMP_RAW=1 to print the raw objects. Do that first if the field probe comes back empty
+// again, because then the shape is genuinely unknown rather than misread.
 // ---------------------------------------------------------------------------------------
 const KEY = process.env.GEMINI_API_KEY;
 if (!KEY) {
@@ -25,12 +31,9 @@ if (!KEY) {
   process.exit(1);
 }
 
-// v1beta, matching the endpoint the renderer uses. The voice library lives alongside the model
-// routes rather than under /models/{model}.
 const BASE = process.env.GEMINI_BASE || 'https://generativelanguage.googleapis.com/v1beta';
-
-// A name worth checking against the catalogue, since it is the one that just failed.
 const LOOK_FOR = process.env.LOOK_FOR_VOICE || 'Bodi';
+const DUMP_RAW = process.env.DUMP_RAW === '1';
 
 async function get(url) {
   const res = await fetch(url, { headers: { 'x-goog-api-key': KEY } });
@@ -49,47 +52,81 @@ async function get(url) {
   }
 }
 
-// Try the documented voice library first, then the alternative shapes, so a route rename on
-// Google's side is answered with evidence rather than an assumption about which one moved.
-const routes = [`${BASE}/voices?pageSize=200`, `${BASE}/voices`, `${BASE}/models?pageSize=200`];
+const routes = [
+  `${BASE}/voices?pageSize=1000`,
+  `${BASE}/voices?pageSize=200`,
+  `${BASE}/voices`,
+  `${BASE}/models?pageSize=200`,
+];
 
-let voices = null;
+let list = null;
 let usedRoute = null;
 
 for (const route of routes) {
   const data = await get(route);
-  const list = data?.voices ?? data?.models;
-  if (Array.isArray(list) && list.length) {
-    voices = list;
+  const found = data?.voices ?? data?.models;
+  if (Array.isArray(found) && found.length) {
+    list = found;
     usedRoute = route;
     break;
   }
 }
 
-if (!voices) {
+if (!list) {
   console.error('FAIL: no voice list came back from any known route');
-  console.error('note: if every route 404s, the voice library may need a different API version');
   process.exit(1);
 }
 
 console.log(`source: ${usedRoute}`);
-console.log(`${voices.length} entries\n`);
+console.log(`${list.length} entries`);
 
-// Print the machine-readable part of each entry. Prebuilt voices carry the usable name; voice
-// design entries carry a voice_... id, which is what a custom narrator would be referenced by.
-for (const v of voices) {
-  const name = v.name ?? '(no name)';
-  const type = v.voiceType ?? v.type ?? '';
-  const desc = v.description ?? v.displayName ?? '';
-  const langs = Array.isArray(v.supportedLanguages) ? ` [${v.supportedLanguages.slice(0, 4).join(', ')}]` : '';
-  console.log(`${name}\t${type}${desc ? `\t${desc}` : ''}${langs}`);
+// Probe the plausible identifier fields. Whichever one returns a string for most entries is the
+// real one, and we say so rather than assuming.
+const CANDIDATES = ['name', 'voiceId', 'voice_id', 'id', 'speaker', 'displayName', 'display_name', 'voiceName'];
+
+const scores = CANDIDATES.map(f => ({
+  field: f,
+  hits: list.filter(v => typeof v[f] === 'string' && v[f] !== '').length,
+})).sort((a, b) => b.hits - a.hits);
+
+console.log('');
+console.log('field probe (how many entries carry each field as a non-empty string):');
+for (const s of scores) console.log(`  ${s.field}: ${s.hits}/${list.length}`);
+
+if (DUMP_RAW) {
+  console.log('');
+  console.log('raw first 3 entries:');
+  for (const v of list.slice(0, 3)) console.log(JSON.stringify(v, null, 2));
+  console.log('all keys seen on entry 1:', Object.keys(list[0]).join(', '));
 }
 
-const hit = voices.find(v => (v.name ?? '').toLowerCase().includes(LOOK_FOR.toLowerCase()));
+const NAME = scores[0].hits > 0 ? scores[0].field : null;
+const desc = v => v.description ?? v.displayName ?? v.summary ?? '';
+const type = v => v.voiceType ?? v.type ?? v.voice_type ?? '';
+const langs = v =>
+  Array.isArray(v.supportedLanguages)
+    ? ` [${v.supportedLanguages.slice(0, 5).join(', ')}]`
+    : Array.isArray(v.languages)
+      ? ` [${v.languages.slice(0, 5).join(', ')}]`
+      : '';
+
+console.log('');
+if (!NAME) {
+  console.error('FAIL: no identifier field found on any entry.');
+  console.error('note: rerun with DUMP_RAW=1 to see the actual shape before trusting any conclusion.');
+  process.exit(1);
+}
+
+console.log(`using "${NAME}" as the identifier field\n`);
+for (const v of list) {
+  console.log(`${v[NAME]}\t${type(v)}${desc(v) ? `\t${desc(v)}` : ''}${langs(v)}`);
+}
+
+const hit = list.find(v => String(v[NAME]).toLowerCase().includes(LOOK_FOR.toLowerCase()));
 console.log('');
 if (hit) {
-  console.log(`\n${LOOK_FOR}: PRESENT as "${hit.name}" - use that exact string.`);
+  console.log(`${LOOK_FOR}: PRESENT as "${hit[NAME]}" - use that exact string.`);
 } else {
-  console.log(`\n${LOOK_FOR}: NOT in this list. It is an AI Studio display name, not an API voice.`);
-  console.log('Cast from the names above instead.');
+  console.log(`${LOOK_FOR}: not found under "${NAME}". Check it against the list above before`);
+  console.log('concluding anything - if the probe line above shows 0 hits, this told you nothing.');
 }
