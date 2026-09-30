@@ -24,28 +24,27 @@
 // ---------------------------------------------------------------------------------------
 //
 // ---------------------------------------------------------------------------------------
-// STYLE PROMPT, AS APPROVED (added 2026-09-29)
+// STYLE PROMPT (added 2026-09-29)
 //
-// Joshua's target register, assembled from the AI Studio presets rather than any one of them:
-// Friendly's warmth and micro-pauses, Promote's energy, minus Promote's elongated vowels,
-// which were the exact thing that read as awkward on the first pass.
+// THIS CONSTANT IS THE WITNESSED-GOOD ONE. It is the wording under which Joshua said "that
+// was perfect", and it is the baseline every later experiment is measured against. Restore it
+// rather than re-derive it: it was arrived at by trial, and the two variants tried after it
+// both failed - a version built from the AI Studio presets came back OVERPERFORMING ("in
+// command of the room" and "glad to be saying it" both ask for an audience, and a host is what
+// you get), and a tightened version came back ANXIOUS ("slightly quick clip" plus micro-pauses
+// plus 1.2x speed stack into tension). Neither variant is kept here.
 //
-// Note on "commanding the room": Narration's own description is "commanding, rich vocal
-// modulation, dramatic pauses", and Narration ranked low. So the prompt below asks for command
-// of the room WITHOUT the modulation and WITHOUT dramatic pauses. It is the authority, not the
-// delivery tic, that is wanted. If a future edit reintroduces "rich vocal modulation" or
-// "dramatic pauses" here, it is trending back toward the preset that was rejected.
+// The shape that works: relaxed and mid-thought, descriptions of ordinary speech rather than
+// prohibitions, and negative instructions confined to the two failure modes that actually
+// occurred (articulating each word separately, leaning on syllables).
 //
 // Punctuation in this constant is deliberately ASCII. An em dash is a model instruction to
-// stress what follows, which is the precise tic the speech pass exists to remove, so a non-
-// ASCII dash has no business in the style prompt itself.
+// stress what follows, which is the precise tic the speech pass exists to remove, so it has no
+// business in a style prompt.
 //
-// Long vowels are handled positively. The model follows "let vowels stay short" far better
-// than "do not elongate vowels", because a bare prohibition reads as a nudge toward the thing
-// it forbids. Only the two failure modes that actually occurred are stated as negatives.
-//
-// Override per run with the style field on the Render Episode workflow; leaving it blank
-// falls back to this constant.
+// Override per run with the style field on the Render Episode workflow; leaving that field
+// BLANK falls back to this constant. A style typed into the field on a previous run persists in
+// the GitHub UI, so clear the field rather than assuming it is empty.
 // ---------------------------------------------------------------------------------------
 import fs from 'node:fs';
 import path from 'node:path';
@@ -74,8 +73,8 @@ const SECTIONS = 3;
 const CHUNK_TURNS = Number(process.env.CHUNK_TURNS || 4);
 
 // Playback speed, applied after synthesis via ffmpeg atempo. Duration changes, pitch does not.
-// 1.2 is the approved setting. It is also past the 1.25 warning threshold only at 1.3, so the
-// workflow default sits just under the point where consonants start colliding.
+// 1.2 is the approved setting. The collision warning fires above 1.25, so the default sits just
+// under the point where consonants start smearing.
 const SPEED = Number(process.env.TTS_SPEED || 1.2);
 if (!Number.isFinite(SPEED) || SPEED <= 0) {
   console.error('FAIL: TTS_SPEED must be a positive number');
@@ -85,10 +84,10 @@ if (SPEED > 1.25) {
   console.warn(`warning: TTS_SPEED ${SPEED} is past the point where consonants start colliding`);
 }
 
-// The approved style prompt. See the note at the top of this file before editing.
+// The witnessed-good style prompt. See the note at the top of this file before editing.
 const STYLE =
   process.env.TTS_STYLE ||
-  'You are two people talking, not narrators reading. Warm, energized, and in command of the room, someone who knows exactly what they are saying and is glad to be saying it. Keep a slightly quick clip, with small natural micro-pauses between thoughts rather than dramatic ones. Let vowels stay short and natural, and let words run together a little. Sentences end on a downward shrug. Do not articulate each word separately, and do not slow down to be understood.';
+  'You are two people talking, not narrators reading. Speak the way someone talks when they are relaxed and mid-thought - words run together a little, some syllables get swallowed, sentences end on a downward shrug rather than a landing. Keep the pace conversational and slightly quick. Do not articulate each word separately. Do not lean on syllables or stretch the ends of words for emphasis. Do not slow down to be understood.';
 
 // The script is written in one call PER SECTION, not one call for the whole episode.
 // A single call asked for 5,400 words returns roughly a quarter of that, every time.

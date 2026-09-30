@@ -39,7 +39,9 @@
 //
 // The style constant is kept IDENTICAL to the one in render-episode.mjs, deliberately, so an
 // audition predicts the episode. If the two ever drift apart, an audition stops being
-// evidence about the render.
+// evidence about the render. It is the WITNESSED-GOOD wording, the one under which Joshua said
+// "that was perfect" - restore it rather than re-deriving it, because the two later variants
+// came back overperforming and then anxious.
 // ---------------------------------------------------------------------------------------
 import fs from 'node:fs';
 import path from 'node:path';
@@ -75,7 +77,7 @@ if (SPEED > 1.25) {
 // deliberately ASCII: an em dash in a style prompt is itself an instruction to stress what
 // follows, which is the tic this whole path exists to remove.
 const DEFAULT_STYLE =
-  'You are two people talking, not narrators reading. Warm, energized, and in command of the room, someone who knows exactly what they are saying and is glad to be saying it. Keep a slightly quick clip, with small natural micro-pauses between thoughts rather than dramatic ones. Let vowels stay short and natural, and let words run together a little. Sentences end on a downward shrug. Do not articulate each word separately, and do not slow down to be understood.';
+  'You are two people talking, not narrators reading. Speak the way someone talks when they are relaxed and mid-thought - words run together a little, some syllables get swallowed, sentences end on a downward shrug rather than a landing. Keep the pace conversational and slightly quick. Do not articulate each word separately. Do not lean on syllables or stretch the ends of words for emphasis. Do not slow down to be understood.';
 
 const STYLE = process.env.TTS_STYLE || DEFAULT_STYLE;
 
@@ -108,6 +110,11 @@ if (!Array.isArray(sections) || sections.length === 0 || !Array.isArray(sections
   process.exit(1);
 }
 
+// Accepts either shape of the turn contract: the writer emits `line`, the repo's hand-written
+// turns files use `text`. Without this the audition reads undefined for every line and renders
+// silence.
+const lineOf = t => (typeof t.text === 'string' && t.text.trim() !== '' ? t.text : t.line);
+
 // Pull the host's own lines across the whole episode, in order, and stop at the word budget.
 // Only lines from the given host: a voice audition should not contain another speaker.
 const lines = [];
@@ -115,9 +122,14 @@ let total = 0;
 for (const section of sections) {
   for (const t of section) {
     if (t.speaker !== host) continue;
-    const n = t.text.split(/\s+/).filter(Boolean).length;
+    const raw = lineOf(t);
+    if (typeof raw !== 'string' || raw.trim() === '') {
+      console.error(`FAIL: a ${host} turn in ${turnsPath} has no text or line field`);
+      process.exit(1);
+    }
+    const n = raw.split(/\s+/).filter(Boolean).length;
     if (total + n > SAMPLE_WORDS) break;
-    lines.push(normalizeForSpeech(t.text));
+    lines.push(normalizeForSpeech(raw));
     total += n;
   }
   if (total >= SAMPLE_WORDS) break;
@@ -162,7 +174,6 @@ async function voice(chunk, label) {
 function wav(pcm, rate = 24000, ch = 1, bits = 16) {
   const h = Buffer.alloc(44);
   h.write('RIFF', 0);
-  h.writeUInt32LE(36 + pcm.length, 4);
   h.write('WAVE', 8);
   h.write('fmt ', 12);
   h.writeUInt32LE(16, 16);
