@@ -8,15 +8,19 @@ on:
         required: true
         default: scripts/internal-courtroom-01.turns.json
       voice:
-        description: Voice name to audition (e.g. Bodi, Fenrir, Orus)
+        description: Voice id to audition (e.g. Fenrir, Orus, Puck). Not an AI Studio display name.
         required: true
-        default: Bodi
+        default: Fenrir
       host:
         description: Whose lines to read (David or Jason)
         required: true
         default: David
+      model:
+        description: TTS model. 3.8 is the current standard and where the newer voice library lives.
+        required: false
+        default: gemini-3.8-flash-tts
       speed:
-        description: Playback speed multiplier. 1.2 is the approved setting.
+        description: Playback speed multiplier (1.0 = model pace, 1.2 = approved for podcast)
         required: false
         default: '1.2'
       style:
@@ -37,7 +41,7 @@ jobs:
       - name: Voice the lines
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          TTS_MODEL: gemini-3.1-flash-tts-preview
+          TTS_MODEL: ${{ inputs.model }}
           TTS_SPEED: ${{ inputs.speed }}
           TTS_STYLE: ${{ inputs.style }}
         run: node render/voice-audition.mjs "${{ inputs.turns }}" "${{ inputs.voice }}" "${{ inputs.host }}"

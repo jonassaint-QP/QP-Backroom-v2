@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       look_for:
-        description: Exact voice id to check for (e.g. Bodi, Fenrir, Orus)
+        description: Exact voice id to check for (e.g. Fenrir, Orus, Puck)
         required: false
-        default: Bodi
+        default: Fenrir
       context:
         description: Filter by context - try Audiobook, Conversational, News
         required: false
@@ -31,6 +31,10 @@ on:
         description: BCP-47 language code, e.g. en-US
         required: false
         default: ''
+      voice_type:
+        description: prebuilt, prompted or replicated
+        required: false
+        default: prebuilt
       show_all:
         description: Set to 1 to print every row, ignoring the 60-row display limit
         required: false
@@ -52,6 +56,7 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           LOOK_FOR_VOICE: ${{ inputs.look_for }}
+          VOICE_TYPE: ${{ inputs.voice_type }}
           VOICE_CONTEXT: ${{ inputs.context }}
           VOICE_PITCH: ${{ inputs.pitch }}
           VOICE_GENDER: ${{ inputs.gender }}
