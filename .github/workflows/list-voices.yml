@@ -4,11 +4,39 @@ on:
   workflow_dispatch:
     inputs:
       look_for:
-        description: Name to check for in the catalogue (e.g. Bodi)
+        description: Exact voice id to check for (e.g. Bodi, Fenrir, Orus)
         required: false
         default: Bodi
+      context:
+        description: Filter by context - try Audiobook, Conversational, News
+        required: false
+        default: ''
+      pitch:
+        description: Filter by pitch - low, medium or high
+        required: false
+        default: ''
+      gender:
+        description: Filter by gender presentation - female, male or neutral
+        required: false
+        default: ''
+      accent:
+        description: Filter by accent - e.g. American, British
+        required: false
+        default: ''
+      search:
+        description: Substring matched against display name and description
+        required: false
+        default: ''
+      language:
+        description: BCP-47 language code, e.g. en-US
+        required: false
+        default: ''
+      show_all:
+        description: Set to 1 to print every row, ignoring the 60-row display limit
+        required: false
+        default: '0'
       dump_raw:
-        description: Set to 1 to print raw voice objects - use when the field probe finds nothing
+        description: Set to 1 to print the raw first entry - use if the id column looks empty
         required: false
         default: '0'
 
@@ -24,5 +52,12 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           LOOK_FOR_VOICE: ${{ inputs.look_for }}
+          VOICE_CONTEXT: ${{ inputs.context }}
+          VOICE_PITCH: ${{ inputs.pitch }}
+          VOICE_GENDER: ${{ inputs.gender }}
+          VOICE_ACCENT: ${{ inputs.accent }}
+          VOICE_SEARCH: ${{ inputs.search }}
+          VOICE_LANGUAGE: ${{ inputs.language }}
+          SHOW_ALL: ${{ inputs.show_all }}
           DUMP_RAW: ${{ inputs.dump_raw }}
         run: node render/list-voices.mjs

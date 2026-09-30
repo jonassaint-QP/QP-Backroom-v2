@@ -7,23 +7,48 @@
 //
 //   400 INVALID_ARGUMENT - "No matching speaker voice found for name: Bodi and language: "
 //
-// So we stop guessing and ask the API. See the note on FIELD NAMES below for why the first
-// version of this script could not answer the question it was written to answer.
+// So we stop guessing and ask the API instead.
 // ---------------------------------------------------------------------------------------
 //
 // ---------------------------------------------------------------------------------------
-// FIELD NAMES (fixed 2026-09-30)
+// FIELD NAMES, RESOLVED (2026-09-30)
 //
-// The first version read `v.name` for every entry and printed 200 rows of "(no name)". That is
-// not a fact about the catalogue - it is a fact about this script. The voice objects returned
-// here do not carry their identifier under `name`, so the Bodi check at the end compared
-// against undefined two hundred times and reported NOT FOUND. Inconclusive, not a finding.
+// Two versions of this script were wrong before this one, and both errors are worth recording
+// because they were both about reading the response rather than about the API.
 //
-// So: probe every plausible field, print which one hit, and dump raw JSON for the first few
-// entries when asked. A lister that cannot name a single voice has to show its work.
+//   1. v1 read `v.name`. The REST response has no `name` field, so every row printed
+//      "(no name)" and the Bodi check compared against undefined 200 times. The script then
+//      reported NOT FOUND, which looked like a finding and was actually a bug.
 //
-// Set DUMP_RAW=1 to print the raw objects. Do that first if the field probe comes back empty
-// again, because then the shape is genuinely unknown rather than misread.
+//   2. v2 probed a list of candidate fields and would have found `id` - but it still printed
+//      header rows before the probe, so a reader could take the table at face value.
+//
+// Per the Voices API reference, ListVoices returns Voice objects with snake_case fields:
+//
+//   id            For PREBUILT voices this IS the speaker name (e.g. Puck, Charon). For custom
+//                 voices it is a generated `voice_...` id. This is the value a synthesis call
+//                 wants, which is the whole point of listing.
+//   display_name  A human label. NOT what synthesis accepts.
+//   type          prebuilt | prompted | replicated
+//   description, pitch, gender, accent, context, language_code, persona
+//
+// So `id` is the identifier, and `display_name` is the friendly label. They are not
+// interchangeable and only one of them renders audio.
+// ---------------------------------------------------------------------------------------
+//
+// ---------------------------------------------------------------------------------------
+// FILTERS (added 2026-09-30)
+//
+// The catalogue is 200 entries and most of them are not English. ListVoices accepts filters,
+// so the useful way to find a narrator is to ask for the shape rather than to read the list:
+//
+//   context=Audiobook   optimal usage context
+//   pitch=low           low | medium | high
+//   gender=male         female | male | neutral
+//   accent=American
+//   search=<substring>  matched against display_name and description
+//
+// Set any of them as workflow inputs. Routing a question to the API beats reading 200 rows.
 // ---------------------------------------------------------------------------------------
 const KEY = process.env.GEMINI_API_KEY;
 if (!KEY) {
@@ -35,35 +60,50 @@ const BASE = process.env.GEMINI_BASE || 'https://generativelanguage.googleapis.c
 const LOOK_FOR = process.env.LOOK_FOR_VOICE || 'Bodi';
 const DUMP_RAW = process.env.DUMP_RAW === '1';
 
+// Filters. Empty string means unset, so a blank workflow input does not become a filter.
+const filters = {
+  type: process.env.VOICE_TYPE || 'prebuilt',
+  context: process.env.VOICE_CONTEXT || '',
+  pitch: process.env.VOICE_PITCH || '',
+  gender: process.env.VOICE_GENDER || '',
+  accent: process.env.VOICE_ACCENT || '',
+  search: process.env.VOICE_SEARCH || '',
+  language_code: process.env.VOICE_LANGUAGE || '',
+};
+
+const query = Object.entries(filters)
+  .filter(([, v]) => v !== '')
+  .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+  .join('&');
+
 async function get(url) {
   const res = await fetch(url, { headers: { 'x-goog-api-key': KEY } });
   const body = await res.text();
-  if (!res.ok) {
-    console.error(`FAIL: ${url} returned ${res.status}`);
-    console.error(body.slice(0, 2000));
-    return null;
-  }
+  if (!res.ok) return { error: `${res.status}: ${body.slice(0, 600)}` };
   try {
-    return JSON.parse(body);
+    return { data: JSON.parse(body) };
   } catch (err) {
-    console.error('FAIL: response is not JSON');
-    console.error(body.slice(0, 2000));
-    return null;
+    return { error: 'response is not JSON' };
   }
 }
 
+// page_size as the API spells it, max 1000. The earlier version sent pageSize, which is not the
+// documented parameter name and silently returned the default page.
 const routes = [
-  `${BASE}/voices?pageSize=1000`,
-  `${BASE}/voices?pageSize=200`,
-  `${BASE}/voices`,
-  `${BASE}/models?pageSize=200`,
+  `${BASE}/voices?page_size=1000${query ? `&${query}` : ''}`,
+  `${BASE}/voices${query ? `?${query}` : ''}`,
+  `${BASE}/voices?page_size=1000`,
 ];
 
 let list = null;
 let usedRoute = null;
 
 for (const route of routes) {
-  const data = await get(route);
+  const { data, error } = await get(route);
+  if (error) {
+    console.warn(`route failed: ${route}\n  ${error}`);
+    continue;
+  }
   const found = data?.voices ?? data?.models;
   if (Array.isArray(found) && found.length) {
     list = found;
@@ -78,55 +118,55 @@ if (!list) {
 }
 
 console.log(`source: ${usedRoute}`);
+console.log(`filters: ${query || '(none)'}`);
 console.log(`${list.length} entries`);
 
-// Probe the plausible identifier fields. Whichever one returns a string for most entries is the
-// real one, and we say so rather than assuming.
-const CANDIDATES = ['name', 'voiceId', 'voice_id', 'id', 'speaker', 'displayName', 'display_name', 'voiceName'];
-
-const scores = CANDIDATES.map(f => ({
-  field: f,
-  hits: list.filter(v => typeof v[f] === 'string' && v[f] !== '').length,
-})).sort((a, b) => b.hits - a.hits);
-
-console.log('');
-console.log('field probe (how many entries carry each field as a non-empty string):');
-for (const s of scores) console.log(`  ${s.field}: ${s.hits}/${list.length}`);
-
 if (DUMP_RAW) {
-  console.log('');
-  console.log('raw first 3 entries:');
-  for (const v of list.slice(0, 3)) console.log(JSON.stringify(v, null, 2));
-  console.log('all keys seen on entry 1:', Object.keys(list[0]).join(', '));
+  console.log('\nraw first entry, so the shape is on the record:');
+  console.log(JSON.stringify(list[0], null, 2));
+  console.log(`all keys on entry 1: ${Object.keys(list[0]).join(', ')}\n`);
 }
 
-const NAME = scores[0].hits > 0 ? scores[0].field : null;
-const desc = v => v.description ?? v.displayName ?? v.summary ?? '';
-const type = v => v.voiceType ?? v.type ?? v.voice_type ?? '';
-const langs = v =>
-  Array.isArray(v.supportedLanguages)
-    ? ` [${v.supportedLanguages.slice(0, 5).join(', ')}]`
-    : Array.isArray(v.languages)
-      ? ` [${v.languages.slice(0, 5).join(', ')}]`
-      : '';
+// Completion tokens cap the table. The filters are the tool for a big list; this is just a guard
+// against a 1000-row log that nobody reads. Set SHOW_ALL=1 to override.
+const LIMIT = process.env.SHOW_ALL === '1' ? list.length : Number(process.env.ROW_LIMIT || 60);
 
 console.log('');
-if (!NAME) {
-  console.error('FAIL: no identifier field found on any entry.');
-  console.error('note: rerun with DUMP_RAW=1 to see the actual shape before trusting any conclusion.');
+for (const v of list.slice(0, LIMIT)) {
+  // id is the value synthesis accepts. Fall back to whichever field is present so a shape
+  // change shows up as a wrong-looking label rather than a silent empty column.
+  const id = v.id ?? v.display_name ?? '(no id)';
+  const label = v.display_name && v.display_name !== id ? ` (${v.display_name})` : '';
+  const bits = [v.type, v.pitch && `pitch=${v.pitch}`, v.gender, v.context, v.accent]
+    .filter(Boolean)
+    .join(' ');
+  console.log(`${id}${label}\t${bits}${v.description ? `\t${v.description}` : ''}`);
+}
+
+if (list.length > LIMIT) {
+  console.log(`\n... ${list.length - LIMIT} more not shown. Narrow with filters, or set SHOW_ALL=1.`);
+}
+
+// The Bodi question, answered explicitly. If the id column above is populated and Bodi is not
+// in it, the answer is real.
+const populated = list.filter(v => v.id).length;
+const hit = list.find(v => String(v.id ?? '').toLowerCase() === LOOK_FOR.toLowerCase());
+const loose = list.find(v => JSON.stringify(v).toLowerCase().includes(LOOK_FOR.toLowerCase()));
+
+console.log('');
+if (populated === 0) {
+  console.error('INCONCLUSIVE: no entry carried an id, so nothing was actually checked.');
+  console.error('Rerun with dump_raw=1 before drawing any conclusion.');
   process.exit(1);
 }
 
-console.log(`using "${NAME}" as the identifier field\n`);
-for (const v of list) {
-  console.log(`${v[NAME]}\t${type(v)}${desc(v) ? `\t${desc(v)}` : ''}${langs(v)}`);
-}
-
-const hit = list.find(v => String(v[NAME]).toLowerCase().includes(LOOK_FOR.toLowerCase()));
-console.log('');
+console.log(`${populated}/${list.length} entries carried an id, so the table above is real.`);
 if (hit) {
-  console.log(`${LOOK_FOR}: PRESENT as "${hit[NAME]}" - use that exact string.`);
+  console.log(`\n${LOOK_FOR}: PRESENT. id = "${hit.id}" - that exact string is what synthesis wants.`);
+} else if (loose) {
+  console.log(`\n${LOOK_FOR}: not an id, but appears somewhere in this entry:`);
+  console.log(JSON.stringify(loose, null, 2));
 } else {
-  console.log(`${LOOK_FOR}: not found under "${NAME}". Check it against the list above before`);
-  console.log('concluding anything - if the probe line above shows 0 hits, this told you nothing.');
+  console.log(`\n${LOOK_FOR}: not present under the current filters.`);
+  console.log('note: the filters above are applied to this check too.');
 }
