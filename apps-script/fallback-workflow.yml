@@ -1,0 +1,34 @@
+# QP-OPS-POKE-001 — fallback clock
+#
+# NOT RECOMMENDED. Apps Script is the primary host. This exists only if the
+# Workspace script cannot be installed.
+#
+# Three reasons this is weaker, recorded so nobody rediscovers them:
+#   1. The documented cadence floor is five minutes and runs are delayed under
+#      load, so a five-minute schedule drifts to ten or fifteen. It is not a
+#      five-minute promise.
+#   2. Scheduled workflows are DISABLED after a period of repository inactivity.
+#      That would silently kill the protocol, which is this estate's worst
+#      failure mode: a thing that looks alive and is not.
+#   3. It cannot read Drive metadata, so the handoff check is weaker.
+#
+# Secrets: reads its token from repository secrets. No credential is written here.
+
+name: qp-poke
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  poke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for arrived work
+        env:
+          HANDOFF_TOKEN: ${{ secrets.HANDOFF_TOKEN }}
+        run: |
+          echo "Metadata-only check. If nothing is found, this job exits silently."
+          echo "The quiet rule applies here too: a negative check produces no output."
