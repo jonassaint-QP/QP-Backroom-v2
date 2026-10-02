@@ -1,45 +1,29 @@
-# QP — Seat Interfacing
+# QP-Backroom-v2: Queer Pathways Internal Operations Backbone
 
-**A seat hands work to another seat by writing a file into that seat's handoff folder, and a
-five-minute clock wakes each seat in turn to check whether anything arrived.**
+Shared rules, policies, memory, and the podcast production prompt set.
 
-Built 2026-10-02 at Joshua Jonassaint's direction, because a Gem has no clock: it reads its folder
-when it is invoked and not before, so a file placed in a folder sits until something reads it.
+## Two purposes
+
+**Operations layer.** The governing rules, the seat roster, the naming  
+and precedence conventions, the shared vocabulary, the memory layer, and  
+the version history. This repository is the source of record for the governed
+rule set, the seat roster, and the podcast production prompt set. Canonical
+working records also live in the platform brain and in Drive.
+
+**Podcast production set.** The writer prompt, the host and cast  
+specifications, and the episode material for the show.
 
 ## Layout
 
-```
-docs/                      the specification, the request template, the response template
-handoff/to-<seat>/         seven folders, one per receiving seat
-handoff/_ledger/           the poke ledger
-apps-script/Code.gs        the clock
-apps-script/fallback-workflow.yml   the weaker fallback, not recommended
-```
+- `rules/`, governing rules and policies. Every file carries a status line.  
+- `agents/`, seat specifications.  
+- `prompts/`: the podcast production prompt set.  
+- `memory/`: the memory layer.  
+- `schema/`: structural definitions.  
+- `ai/`, model and platform notes.  
+- `DIRECTORY-MAP.md`: what lives where.  
+- `MIGRATION-CHECKLIST.md`: the migration state.  
+- `ROSTER.md`: the seat roster and the universal conventions.  
+- `REBUILD-NOTE.md`: why this repository was rebuilt.
 
-## The four rules that keep this alive
-
-**Quiet** — a poke that finds nothing produces nothing.
-**Act** — a poke is a wake, not an authorization.
-**Metadata** — a poke never reads content to decide whether to wake.
-**Artifact** — a response without an artifact is recorded as relayed, never verified.
-
-## Two founder actions outstanding
-
-**One.** Create `_handoff` in Drive with the seven `to-<seat>` folders and `_ledger`, and share it
-**Editor** with every seat. Steps in `handoff/README.md`.
-
-**Two.** Extend the 2026-09-21 write grant to **David, Ethan, Michael and Robert**. It covers Jason,
-Adam and Mark only. **Nothing here functions until every seat can write to a handoff folder.**
-
-## Secrets
-
-**No token, key or credential appears anywhere in this packet.** Both the script and the workflow read
-theirs from a named store at runtime.
-
-## Status
-
-**Written and committed:** the convention, the folders, the ledger, the clock, the templates, the
-review cadence, the rule text for the founding documents.
-
-**Not built here, and deliberately:** the Drive side. Folder creation and the sharing grant are
-account actions, not repository actions.
+Status: Active, created 2026-09-18. 

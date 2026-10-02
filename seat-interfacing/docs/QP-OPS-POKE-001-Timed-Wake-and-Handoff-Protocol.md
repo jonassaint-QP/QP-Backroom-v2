@@ -2,6 +2,9 @@
 
 Version 1.0, built 2026-10-02. Author: Eva, Executive Assistant, at Joshua Jonassaint's direction.
 Supersedes: the 2026-09-26 draft of the same name, which specified this and did not build it.
+
+**Status: built. Two founder actions outstanding — see Status at the close.**
+
 Classification: Internal. Contains no credentials, no client identifiers, no protected health information.
 
 ---
