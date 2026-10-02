@@ -23,17 +23,27 @@ seat-interfacing/apps-script/fallback-workflow.yml   the weaker fallback, not re
 **Metadata** — a poke never reads content to decide whether to wake.
 **Artifact** — a response without an artifact is recorded as relayed, never verified.
 
-## Two founder actions outstanding
+## The access path, corrected 2026-10-02
 
-**One.** Create `_handoff` in Drive with the seven `to-<seat>` folders and `_ledger`, and share it
-**Editor** with every seat. Steps in `handoff/README.md`.
+**All seven seats run under one Google account**, so there is no per-seat sharing grant and nothing to
+change from Viewer to Editor. **What gates a seat's write is that a Gem cannot create or save a file
+— it holds no write tool.** No sharing setting fixes that.
 
-**Two.** Extend the 2026-09-21 write grant to **David, Ethan, Michael and Robert**. It covers Jason,
-Adam and Mark only. **Nothing here functions until every seat can write to a handoff folder.**
+**So the rail is one Drive write path, not seven grants.** A component holding write under the same
+account files a seat's output into `to-<seat>`. The Apps Script is the recommended one: it already
+holds write and already writes the ledger. Full table in `handoff/README.md`.
+
+## Founder actions outstanding
+
+**One.** Create `_handoff` in Drive with the seven `to-<seat>` folders and `_ledger`. Steps in
+`handoff/README.md`.
+
+**Two.** Decide which component files on behalf of the seats, and extend it to write into `to-<seat>`.
+**A rail nobody has tested is a rail nobody has.**
 
 ## Secrets
 
-**No token, key or credential appears anywhere in this packet.** The script reads from Script
+**No token, no key or credential appears anywhere in this packet.** The script reads from Script
 Properties; the workflow reads from repository secrets.
 
 ## Status
@@ -41,5 +51,5 @@ Properties; the workflow reads from repository secrets.
 **Committed:** the convention, the folders, the ledger, the clock, the templates, the review cadence,
 the rule text for the founding documents.
 
-**Not built here, and deliberately:** the Drive side. Folder creation and the sharing grant are
-account actions, not repository actions. **A repository cannot create a Drive folder.**
+**Not built here, and deliberately:** the Drive side. Folder creation is an account action, not a
+repository action. **A repository cannot create a Drive folder.**
