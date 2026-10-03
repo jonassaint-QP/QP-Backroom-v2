@@ -5,6 +5,24 @@ can operate it and the financial seat can watch it. It does not amend any policy
 
 ---
 
+## AMENDMENT — 2026-10-02, 20:30, founder clarification
+
+**Michael's half is DORMANT until 2026-10-10.** The sale side of coaching — acquisition, offers,
+discounting and promotional structure — carries **no live authority in the interim.** Michael decides on
+the tenth what he wants to do, and not before.
+
+The split below stands as the *ownership* assignment. **It is not a live mandate.** A successor must not
+read "Michael owns the sale" as authority exercisable this week.
+
+**Consequence, recorded so it is not re-litigated:** the discount-floor question is **closed rather than
+open.** No floor and no discretion limit need to be set, because no discounting is authorised before the
+10th. The rule interaction stays on the record for when the dormancy lifts.
+
+**Also confirmed at the same time, for the avoidance of doubt: financial is Mark's, in full.** No other
+seat carries a financial authority, and coaching's money is watched by Mark and nobody else.
+
+---
+
 ## What the stream is
 
 **Coaching is a non-clinical service, delivered clinically by the founder, priced at $150 for one hour
@@ -19,7 +37,7 @@ first time in the practice's history.
 coaching engagement. **This is the half that decides whether the service can be delivered as sold.**
 
 **Michael owns the sale.** Client and customer acquisition, the offer, and any discounting or promotional
-structure used to bring people in. **This is the half that decides whether anyone buys it.**
+structure used to bring people in. **This half is DORMANT until 2026-10-10 — see the amendment above.**
 
 **They are deliberately separate.** The seat that promises and the seat that delivers are not the same
 seat, and neither can rewrite the other's half.
@@ -52,7 +70,7 @@ the condition the two-lane architecture was built to remove.**
 **Mark cannot monitor a stream his folder does not name.** The following must be carried in his folder
 for the loop to close:
 
-**One.** Owned by Jason (operation) and Michael (sale), in the split above.
+**One.** Owned by Jason (operation) and Michael (sale), **with the sale half dormant until 2026-10-10.**
 
 **Two.** Settles to the Stripe account, on an exception expiring 2026-10-10.
 
@@ -64,9 +82,10 @@ not as unclassified commercial income.
 
 ---
 
-## The discount question, which touches two existing rules
+## The rule interaction, held for when the dormancy lifts
 
-**Michael holds discounting authority to bring clients in. Two standing rules constrain it:**
+**This is retained on the record but is not currently engaged, since no discounting is authorised before
+10 October.**
 
 **A discount is a price change.** Under the compliance ruling adopted on 2 October, any change to a
 claim, credential, price, jurisdiction or legal endpoint voids the clearance and re-checks it. **So every
@@ -75,9 +94,8 @@ promotional offer resets compliance on that offer.**
 **And the financial seat carries a pricing rule** requiring a written reason for any deviation from
 published rate.
 
-**Consequence, stated so it is not discovered later:** without a defined floor, every discount Michael
-runs triggers a compliance re-check and a written justification. **The founder has not yet set a floor or
-a discretion limit, and until he does, every deviation is a founder-level decision.**
+**Consequence:** when Michael's authority goes live, a defined floor and discretion limit should exist,
+or every deviation is a founder-level decision twice over.
 
 ---
 
