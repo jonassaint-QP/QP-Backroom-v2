@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       brief:
-        description: Path to the episode brief in this repo
+        description: Path to the episode brief in this repo, or to a finished turns file (scripts/*.json) to voice it as written
         required: true
         default: prompts/episode-brief-internal-courtroom.md
       episode_id:
