@@ -1,4 +1,5 @@
-// QP podcast renderer. Brief in, MP3 out. See acceptance criteria, criteria 1-9.
+// QP podcast renderer. Brief in, MP3 out - or a finished turns file in (scripts/*.json), which
+// skips the writer and is voiced as written. See acceptance criteria, criteria 1-9.
 //
 // ---------------------------------------------------------------------------------------
 // VOICE PATH ALIGNMENT (added 2026-09-29)
@@ -104,11 +105,15 @@ const SECTION_WORDS =
   'Length for this section: 1,800 to 2,150 spoken words. Count the words in the lines you produce before you return, and state that count on its own line after the array. If you cannot reach 1,800 words from the material without padding, say so in that same line instead of inflating the dialogue.';
 const TAIL_TURNS = 6; // turns carried from the end of the previous section, for continuity only
 
-const [briefPath, episodeId] = process.argv.slice(2);
-if (!briefPath || !episodeId) {
-  console.error('usage: node render/render-episode.mjs <brief-path> <episode-id>');
+// The source is either a brief (.md), which goes through the writer, or a finished turns file
+// (.json), which is voiced as written. A turns file uses the scripts/ convention: an array of
+// sections, each an array of turns. A flat array is read as a single section.
+const [sourcePath, episodeId] = process.argv.slice(2);
+if (!sourcePath || !episodeId) {
+  console.error('usage: node render/render-episode.mjs <brief.md | turns.json> <episode-id>');
   process.exit(1);
 }
+const fromTurns = sourcePath.endsWith('.json');
 
 const BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
@@ -161,6 +166,11 @@ function parseTurns(raw, label) {
       console.error(`FAIL: ${label} has a turn with no spoken line (speaker=${t.speaker ?? '?'})`);
       process.exit(1);
     }
+    // A speaker with no voice config is voiced at the model's whim, not as either host.
+    if (!(t.speaker in VOICES)) {
+      console.error(`FAIL: ${label} has a turn for unknown speaker "${t.speaker}" - expected ${Object.keys(VOICES).join(' or ')}`);
+      process.exit(1);
+    }
     t.text = line;
     if (t.pause_after_ms !== undefined) {
       console.warn(`note: pause_after_ms=${t.pause_after_ms} is realised by punctuation, not sent to the model`);
@@ -169,12 +179,22 @@ function parseTurns(raw, label) {
   return out;
 }
 
-// 1. script pass: writer prompt + brief + section plan -> one turn array per section
-const writer = fs.readFileSync('prompts/episode-writer.md', 'utf8');
-const brief = fs.readFileSync(briefPath, 'utf8');
-
+// 1. script: a turns file is read as-is; a brief goes through the writer, one call per section.
 const parts = [];
-for (let i = 0; i < SECTIONS; i++) {
+if (fromTurns) {
+  const data = JSON.parse(fs.readFileSync(sourcePath, 'utf8'));
+  const sections = Array.isArray(data) && data.every(Array.isArray) ? data : [data];
+  sections.forEach((s, i) => {
+    const section = parseTurns(JSON.stringify(s), `${sourcePath} section ${i + 1}`);
+    parts.push(section);
+    console.log(`section ${i + 1}: ${section.length} turns, ${section.reduce((n, t) => n + words(t.text), 0)} words (from file)`);
+  });
+}
+
+// writer prompt + brief + section plan -> one turn array per section
+const writer = fromTurns ? '' : fs.readFileSync('prompts/episode-writer.md', 'utf8');
+const brief = fromTurns ? '' : fs.readFileSync(sourcePath, 'utf8');
+for (let i = 0; i < (fromTurns ? 0 : SECTIONS); i++) {
   const prior = parts.length
     ? `\n\nSECTION ${i} AS ALREADY WRITTEN: the closing turns of the previous section. This is context for continuity only. Do not repeat it, do not restate it, and do not summarise it before continuing.\n\n${parts
         .at(-1)
