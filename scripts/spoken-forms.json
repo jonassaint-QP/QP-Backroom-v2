@@ -7,4 +7,8 @@
 // gets a word wrong: add the pair, rerun, and the fix applies to every chapter from then on.
 // It is deliberately empty until a real render tells us what the model actually mispronounces,
 // because guessing at pronunciation problems produces a list nobody maintains.
-{}
+{
+  "#1": "number one",
+  "#2": "number two",
+  "2SLGBTQI+": "two-S L G B T Q I plus"
+}

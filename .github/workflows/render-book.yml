@@ -20,7 +20,7 @@ on:
         required: false
         default: '1'
       style:
-        description: Style prompt. Leave blank for the built-in one - fill it in to A/B a change.
+        description: Style tag, sent in square brackets and not spoken. Leave blank for the built-in one.
         required: false
         default: ''
 
@@ -40,7 +40,7 @@ jobs:
       - name: Render chapter
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          TTS_MODEL: gemini-3.1-flash-tts-preview
+          TTS_MODEL: gemini-3.8-flash-tts
           BOOK_VOICE: ${{ inputs.voice }}
           TTS_SPEED: ${{ inputs.speed }}
           TTS_STYLE: ${{ inputs.style }}
