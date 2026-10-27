@@ -76,7 +76,7 @@ if (!KEY) {
   process.exit(1);
 }
 
-const TTS_MODEL = process.env.TTS_MODEL || 'gemini-3.1-flash-tts-preview';
+const TTS_MODEL = process.env.TTS_MODEL || 'gemini-3.8-flash-tts';
 const BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 // Single narrator for the whole book. Casting is a workflow field, not a code change.
@@ -91,9 +91,11 @@ if (!Number.isFinite(SPEED) || SPEED <= 0) {
   process.exit(1);
 }
 
-// ~300 words is roughly two minutes of speech. Long enough that prosody settles, short enough
-// that a single failed call is cheap.
-const CHUNK_WORDS = Number(process.env.BOOK_CHUNK_WORDS || 300);
+// ~600 words is roughly four minutes of speech. Raised from 300 on 2026-10-27: the TTS model is
+// capped at 100 requests a day on this account's tier, and the cap counts requests, not audio,
+// so bigger chunks fit about twice the book into a day at the same cost. If the voice starts to
+// drift late in a chunk, bring this back down.
+const CHUNK_WORDS = Number(process.env.BOOK_CHUNK_WORDS || 600);
 
 // Retries. Long unattended runs hit transient 429s and 5xx responses, and a single one should
 // not cost a chapter. 4xx other than 429 is NOT retried - a bad request fails identically
@@ -102,9 +104,13 @@ const ATTEMPTS = Number(process.env.API_ATTEMPTS || 5);
 
 // Narrator register. Deliberately not the podcast phrasing: an audiobook is read TO one
 // person, over hours, and anything with performance in it wears out fast.
-const STYLE =
-  process.env.TTS_STYLE ||
-  'Read this as a single narrator speaking to one person who is listening closely. Warm, grounded and unhurried, the way someone reads something they believe in. Let the sentences finish and settle before the next one starts. Do not perform it, do not dramatise it, and do not announce it.';
+//
+// It goes in as a short bracketed tag, not a sentence of instructions (changed 2026-10-27).
+// gemini-3.8-flash-tts reads a prose instruction ALOUD - every chunk of the first Chapter 1
+// and 2 renders opened with the narrator saying "Read this as a single narrator..." - and it
+// also speaks a "Say in a ... voice:" prefix and rejects systemInstruction outright. A tag in
+// square brackets steers delivery without being spoken (checked by transcribing the output).
+const STYLE = process.env.TTS_STYLE || 'warm, unhurried, intimate narration';
 
 const [chapterPath, chapterId] = process.argv.slice(2);
 if (!chapterPath || !chapterId) {
@@ -128,6 +134,9 @@ function stripPageArtifacts(text) {
     .replace(/^\s*[-*_]{3,}\s*$/gm, '') // horizontal rules
     .replace(/\*{1,3}/g, '') // emphasis marks
     .replace(/^\s*>\s?/gm, '') // blockquote markers
+    .replace(/-{2,}/g, ' ') // dash runs inside a line, "---Begin Forwarded Message---"
+    .replace(/^-(?=\S)/gm, '') // leading hyphen on heading song lines, "-Noise (Kenny Chesney, 2016)"
+    .replace(/([^\s.!?,;:"'])[ \t]*$/gm, '$1.') // a line with no end mark (heading, subject line, text message) gets a full stop, or it runs into the next sentence once newlines collapse
     .replace(/[ \t]+/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
@@ -141,11 +150,12 @@ function normalizeForSpeech(text) {
   return text
     .replace(/\s*[\u2014\u2013]\s*/g, ', ') // em / en dash -> comma
     .replace(/\s*;\s*/g, '. ') // semicolon -> full stop
-    .replace(/\s*:\s*/g, ', ') // colon -> comma
-    .replace(/\s*[\u201C\u201D\u2018\u2019"]/g, '') // quote marks drop out
+    .replace(/\s*:(?!\d)\s*/g, ', ') // colon -> comma, except in clock times like 10:31
+    .replace(/[\u201C\u201D\u2018\u2019"]/g, '') // quote marks drop out (not the space before them, or 'said. "That' becomes 'said.That')
     .replace(/\s*[()]/g, ' ') // parentheses drop out
     .replace(/\.{2,}/g, '. ') // ellipses collapse
     .replace(/\s{2,}/g, ' ')
+    .replace(/\s+([.,!?])/g, '$1') // no space before a mark, left behind when a parenthesis drops out
     .trim();
 }
 
@@ -155,7 +165,9 @@ function loadSpokenForms() {
   const p = 'scripts/spoken-forms.json';
   if (!fs.existsSync(p)) return {};
   try {
-    return JSON.parse(fs.readFileSync(p, 'utf8'));
+    // The file opens with // comment lines, which JSON.parse rejects, so drop them first.
+    const body = fs.readFileSync(p, 'utf8').replace(/^\s*\/\/.*$/gm, '');
+    return JSON.parse(body);
   } catch (err) {
     console.error(`FAIL: ${p} exists but is not valid JSON`);
     process.exit(1);
@@ -225,7 +237,7 @@ async function call(body, label) {
 async function voiceChunk(text, label) {
   const res = await call(
     {
-      contents: [{ role: 'user', parts: [{ text: `${STYLE}\n\n${text}` }] }],
+      contents: [{ role: 'user', parts: [{ text: `[${STYLE}] ${text}` }] }],
       generationConfig: {
         responseModalities: ['AUDIO'],
         // Single speaker. There is no second identity in this file by design.
@@ -243,56 +255,35 @@ async function voiceChunk(text, label) {
   return Buffer.from(part.inlineData.data, 'base64');
 }
 
-const raw = fs.readFileSync(chapterPath, 'utf8');
-const forms = loadSpokenForms();
-const spokenText = normalizeForSpeech(applySpokenForms(stripPageArtifacts(raw), forms));
-const chunks = chunkText(spokenText, CHUNK_WORDS);
-
-if (chunks.length === 0) {
-  console.error(`FAIL: ${chapterPath} produced no speakable text`);
-  process.exit(1);
+// ---------------------------------------------------------------------------------------
+// ONE FILE PER PART (added 2026-10-27)
+//
+// Joshua reviews a chapter by listening and sending corrections part by part, and each part is
+// roughly a twelve-minute read. So the chapter is split on its "Part N:" heading lines and each
+// part is voiced and written as its own file: out/<id>-part-N.mp3. A chunk never crosses a part
+// boundary. Anything before the first part (section and chapter headings, "Before you begin")
+// is pushed to the start of Part 1; the closing "Landing" note stays at the end of the last
+// part. A chapter with no Part headings renders as a single file, out/<id>.mp3, as before.
+//
+// Chunks checkpoint per part (out/<id>.chunks/part-N/), so an edit to one part only costs that
+// part's chunks on rerun. NOTE: resume is by chunk index, not content. After editing a part,
+// delete that part's chunk folder before rerunning, or stale audio is reused.
+// ---------------------------------------------------------------------------------------
+function splitParts(text) {
+  const lines = text.split('\n');
+  const starts = [];
+  lines.forEach((l, i) => {
+    if (/^\s*Part\s+\d+\s*:/i.test(l)) starts.push(i);
+  });
+  if (starts.length === 0) return [{ label: null, text }];
+  return starts.map((start, k) => {
+    const from = k === 0 ? 0 : start; // preamble rides with Part 1
+    const to = k + 1 < starts.length ? starts[k + 1] : lines.length; // Landing rides with the last part
+    const n = lines[start].match(/\d+/)[0];
+    return { label: `part-${n}`, text: lines.slice(from, to).join('\n') };
+  });
 }
 
-const totalWords = spokenText.split(/\s+/).filter(Boolean).length;
-
-fs.mkdirSync('out', { recursive: true });
-const chunkDir = path.join('out', `${chapterId}.chunks`);
-fs.mkdirSync(chunkDir, { recursive: true });
-
-// Proofing artifact. Sight-check this before trusting the audio: markers that survive the
-// strip are inaudible in a log and obvious on the page.
-const spokenPath = path.join('out', `${chapterId}.spoken.txt`);
-fs.writeFileSync(spokenPath, chunks.join('\n\n'));
-
-console.log(`chapter: ${chapterId} <- ${chapterPath}`);
-console.log(`narrator: ${VOICE}, tempo: ${SPEED}x, chunk size: ${CHUNK_WORDS} words`);
-console.log(`text: ${totalWords} words in ${chunks.length} chunks`);
-
-const parts = [];
-let rendered = 0;
-
-for (let i = 0; i < chunks.length; i++) {
-  const n = String(i + 1).padStart(4, '0');
-  const chunkPath = path.join(chunkDir, `${n}.pcm`);
-
-  if (fs.existsSync(chunkPath)) {
-    parts.push(fs.readFileSync(chunkPath));
-    console.log(`  chunk ${i + 1}/${chunks.length}: resumed from disk`);
-    continue;
-  }
-
-  const pcm = await voiceChunk(chunks[i], `chunk ${i + 1}`);
-  fs.writeFileSync(chunkPath, pcm);
-  parts.push(pcm);
-  rendered += 1;
-  console.log(
-    `  chunk ${i + 1}/${chunks.length}: ${chunks[i].split(/\s+/).filter(Boolean).length} words, ${pcm.length} bytes`,
-  );
-}
-
-console.log(`rendered ${rendered} new chunks, ${chunks.length - rendered} resumed`);
-
-// raw PCM (24kHz / 16-bit / mono) -> WAV -> MP3
 function wav(pcm, rate = 24000, ch = 1, bits = 16) {
   const h = Buffer.alloc(44);
   h.write('RIFF', 0);
@@ -311,28 +302,92 @@ function wav(pcm, rate = 24000, ch = 1, bits = 16) {
   return Buffer.concat([h, pcm]);
 }
 
-const wavPath = path.join('out', `${chapterId}.wav`);
-fs.writeFileSync(wavPath, wav(Buffer.concat(parts)));
+function hasFfmpeg() {
+  try {
+    execFileSync('ffmpeg', ['-version'], { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
-const mp3Path = path.join('out', `${chapterId}.mp3`);
-const filter = SPEED === 1 ? [] : ['-filter:a', `atempo=${SPEED}`];
-execFileSync('ffmpeg', ['-y', '-i', wavPath, ...filter, '-codec:a', 'libmp3lame', '-qscale:a', '4', mp3Path], { stdio: 'inherit' });
-fs.unlinkSync(wavPath);
+const raw = fs.readFileSync(chapterPath, 'utf8');
+const forms = loadSpokenForms();
+const sections = splitParts(raw).map(s => {
+  const spoken = normalizeForSpeech(applySpokenForms(stripPageArtifacts(s.text), forms));
+  return { ...s, chunks: chunkText(spoken, CHUNK_WORDS), words: spoken.split(/\s+/).filter(Boolean).length };
+});
 
-const seconds = Number(
-  execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', mp3Path])
-    .toString()
-    .trim(),
+if (sections.every(s => s.chunks.length === 0)) {
+  console.error(`FAIL: ${chapterPath} produced no speakable text`);
+  process.exit(1);
+}
+
+fs.mkdirSync('out', { recursive: true });
+const ffmpeg = hasFfmpeg();
+
+console.log(`chapter: ${chapterId} <- ${chapterPath}`);
+console.log(`narrator: ${VOICE}, model: ${TTS_MODEL}, tempo: ${SPEED}x, chunk size: ${CHUNK_WORDS} words`);
+console.log(
+  `parts: ${sections.map(s => `${s.label ?? 'whole'} ${s.words}w/${s.chunks.length}c`).join(', ')}`,
 );
-console.log(`duration: ${(seconds / 60).toFixed(1)} min`);
+if (!ffmpeg) console.warn('warning: ffmpeg not found - writing WAV only and keeping chunks for a later MP3 pass');
 
-// Sanity check on pace: 140-160 spoken words a minute is normal narration. Far outside that
-// range means a chunk was dropped or the text is not what we think it is.
-const wpm = Math.round(totalWords / (seconds / 60));
-console.log(`pace: ${wpm} words per minute`);
-if (wpm < 110 || wpm > 200) console.warn(`warning: ${wpm} wpm is outside the normal narration range`);
+for (const s of sections) {
+  const name = s.label ? `${chapterId}-${s.label}` : chapterId;
+  const chunkDir = s.label ? path.join('out', `${chapterId}.chunks`, s.label) : path.join('out', `${chapterId}.chunks`);
+  fs.mkdirSync(chunkDir, { recursive: true });
 
-// Only clear the checkpoint on success. A failed run keeps its chunks so the rerun resumes.
-fs.rmSync(chunkDir, { recursive: true, force: true });
+  // Proofing artifact. Sight-check this before trusting the audio: markers that survive the
+  // strip are inaudible in a log and obvious on the page.
+  const spokenPath = path.join('out', `${name}.spoken.txt`);
+  fs.writeFileSync(spokenPath, s.chunks.join('\n\n'));
 
-console.log(`wrote ${mp3Path}, ${spokenPath}`);
+  console.log(`${name}: ${s.words} words in ${s.chunks.length} chunks`);
+  const pcms = [];
+  let rendered = 0;
+
+  for (let i = 0; i < s.chunks.length; i++) {
+    const chunkPath = path.join(chunkDir, `${String(i + 1).padStart(4, '0')}.pcm`);
+    if (fs.existsSync(chunkPath)) {
+      pcms.push(fs.readFileSync(chunkPath));
+      console.log(`  chunk ${i + 1}/${s.chunks.length}: resumed from disk`);
+      continue;
+    }
+    const pcm = await voiceChunk(s.chunks[i], `${name} chunk ${i + 1}`);
+    fs.writeFileSync(chunkPath, pcm);
+    pcms.push(pcm);
+    rendered += 1;
+    console.log(
+      `  chunk ${i + 1}/${s.chunks.length}: ${s.chunks[i].split(/\s+/).filter(Boolean).length} words, ${pcm.length} bytes`,
+    );
+  }
+  console.log(`  rendered ${rendered} new chunks, ${s.chunks.length - rendered} resumed`);
+
+  // raw PCM (24kHz / 16-bit / mono) -> WAV -> MP3
+  const pcm = Buffer.concat(pcms);
+  const wavPath = path.join('out', `${name}.wav`);
+  fs.writeFileSync(wavPath, wav(pcm));
+
+  // Duration from the PCM itself, so the pace check works with or without ffprobe.
+  const seconds = pcm.length / (24000 * 2) / SPEED;
+  const wpm = Math.round(s.words / (seconds / 60));
+  console.log(`  duration: ${(seconds / 60).toFixed(1)} min, pace: ${wpm} words per minute`);
+  // 140-160 spoken words a minute is normal narration. Far outside that range means a chunk
+  // was dropped or the text is not what we think it is.
+  if (wpm < 110 || wpm > 200) console.warn(`  warning: ${wpm} wpm is outside the normal narration range`);
+
+  if (!ffmpeg) {
+    console.log(`  wrote ${wavPath}, ${spokenPath} (chunks kept for the MP3 pass)`);
+    continue;
+  }
+
+  const mp3Path = path.join('out', `${name}.mp3`);
+  const filter = SPEED === 1 ? [] : ['-filter:a', `atempo=${SPEED}`];
+  execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', wavPath, ...filter, '-codec:a', 'libmp3lame', '-qscale:a', '4', mp3Path], { stdio: 'inherit' });
+  fs.unlinkSync(wavPath);
+
+  // Only clear the checkpoint on success. A failed run keeps its chunks so the rerun resumes.
+  fs.rmSync(chunkDir, { recursive: true, force: true });
+  console.log(`  wrote ${mp3Path}, ${spokenPath}`);
+}
